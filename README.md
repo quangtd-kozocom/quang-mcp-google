@@ -10,23 +10,44 @@ token is cached and auto-refreshed — no repeated logins, no service accounts.
 
 ## Quick start
 
+### Easiest install
+
+After the package is published to npm:
+
+```bash
+npm install -g kozocom-mcp-google
+kozocom-mcp setup
+```
+
+Or use the installer script:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/kozocom/kozocom-mcp/main/scripts/install.sh | sh
+```
+
+`kozocom-mcp setup` checks the config directory, verifies the OAuth client secret, optionally
+runs Google login, and prints MCP config for Codex, Claude Code, and VS Code Copilot.
+
+### From source
+
 ```bash
 pnpm install
 pnpm build
-pnpm login      # one-time: opens the browser to sign in
+pnpm setup      # checks setup, signs in, and prints MCP config
 ```
 
 First, follow **[SETUP.md](./SETUP.md)** to create the Google Cloud OAuth credentials
-(a one-time, ~5 minute click-through). Then `pnpm login`.
+(a one-time, ~5 minute click-through). Then run `kozocom-mcp setup` or `pnpm setup`.
 
 ## Scripts
 
 | Command          | Description                                  |
 | ---------------- | -------------------------------------------- |
+| `pnpm setup`     | Check setup, sign in, and print MCP config   |
 | `pnpm login`     | Sign in to Google (run once after `build`)   |
 | `pnpm dev`       | Run the server with hot reload (`tsx watch`) |
 | `pnpm build`     | Compile TypeScript to `dist/`                |
-| `pnpm start`     | Run the compiled server (`dist/index.js`)    |
+| `pnpm start`     | Run the compiled server over stdio           |
 | `pnpm test`      | Run unit tests (vitest, fully mocked)        |
 | `pnpm lint`      | Lint with oxlint                             |
 | `pnpm typecheck` | Type-check without emitting                  |
@@ -60,15 +81,34 @@ First, follow **[SETUP.md](./SETUP.md)** to create the Google Cloud OAuth creden
 
 ## Using with an MCP client
 
-All clients launch the built server over stdio. Build first (`pnpm build`), then sign in
-(`pnpm login`). The absolute path below assumes this repo location — adjust if you move it.
+All clients launch the server over stdio. If installed from npm, use the `npx` config below.
+If running from source, build first (`pnpm build`), then sign in (`pnpm login`) or run
+`pnpm setup`. The absolute source path below assumes this repo location — adjust if you move it.
+
+### npm / npx config
+
+```json
+{
+  "command": "npx",
+  "args": ["-y", "kozocom-mcp-google"],
+  "env": { "GOOGLE_OAUTH_CREDENTIALS": "/home/quang/.kozocom-mcp/client_secret.json" }
+}
+```
+
+`npx -y kozocom-mcp-google` starts the MCP server. For terminal use, install globally and run:
+
+```bash
+kozocom-mcp setup
+kozocom-mcp login
+kozocom-mcp
+```
 
 ### Claude Code
 
 ```bash
 claude mcp add kozocom-google \
   --env GOOGLE_OAUTH_CREDENTIALS=$HOME/.kozocom-mcp/client_secret.json \
-  -- node /home/quang/Projects/kozocom/kozocom-mcp/dist/index.js
+  -- npx -y kozocom-mcp-google
 ```
 
 Or add to `.mcp.json` / your Claude config:
@@ -77,8 +117,8 @@ Or add to `.mcp.json` / your Claude config:
 {
   "mcpServers": {
     "kozocom-google": {
-      "command": "node",
-      "args": ["/home/quang/Projects/kozocom/kozocom-mcp/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "kozocom-mcp-google"],
       "env": { "GOOGLE_OAUTH_CREDENTIALS": "/home/quang/.kozocom-mcp/client_secret.json" }
     }
   }
@@ -91,8 +131,8 @@ In `~/.codex/config.toml`:
 
 ```toml
 [mcp_servers.kozocom-google]
-command = "node"
-args = ["/home/quang/Projects/kozocom/kozocom-mcp/dist/index.js"]
+command = "npx"
+args = ["-y", "kozocom-mcp-google"]
 env = { GOOGLE_OAUTH_CREDENTIALS = "/home/quang/.kozocom-mcp/client_secret.json" }
 ```
 
@@ -105,8 +145,8 @@ In `.vscode/mcp.json` (or the global `mcp.json`):
   "servers": {
     "kozocom-google": {
       "type": "stdio",
-      "command": "node",
-      "args": ["/home/quang/Projects/kozocom/kozocom-mcp/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "kozocom-mcp-google"],
       "env": { "GOOGLE_OAUTH_CREDENTIALS": "/home/quang/.kozocom-mcp/client_secret.json" }
     }
   }

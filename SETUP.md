@@ -48,16 +48,31 @@ server remembers you.
 
 ## Step 5 — Build and sign in
 
+If installed from npm:
+
+```bash
+npm install -g kozocom-mcp-google
+kozocom-mcp setup
+```
+
 From the `kozocom-mcp/` directory:
 
 ```bash
 pnpm install
 pnpm build
-pnpm login
+pnpm setup
 ```
 
 Your browser opens to Google's consent screen. Click **Allow**. You'll see a "Signed in"
 page; close the tab. The token is saved to `~/.kozocom-mcp/token.json` and reused automatically.
+
+For a login-only retry, run:
+
+```bash
+kozocom-mcp login
+# or, from source:
+pnpm login
+```
 
 Verify:
 
