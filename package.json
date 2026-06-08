@@ -10,9 +10,13 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/index.js",
+    "login": "node dist/login.js",
+    "login:dev": "tsx src/login.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "oxlint",
     "typecheck": "tsc --noEmit"
   },
@@ -23,6 +27,8 @@
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "googleapis": "^144.0.0",
+    "open": "^10.1.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

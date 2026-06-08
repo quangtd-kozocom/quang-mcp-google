@@ -1,36 +1,24 @@
 #!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { z } from "zod";
+import { SERVER_NAME, SERVER_VERSION } from "./constants.js";
+import { registerGoogleTools } from "./tools/google.js";
 
 const server = new McpServer({
-  name: "kozocom-mcp",
-  version: "0.1.0",
+  name: SERVER_NAME,
+  version: SERVER_VERSION,
 });
 
-// Example tool — replace with real tools.
-server.registerTool(
-  "ping",
-  {
-    title: "Ping",
-    description: "Echoes back the provided message.",
-    inputSchema: {
-      message: z.string().describe("Message to echo back"),
-    },
-  },
-  async ({ message }) => ({
-    content: [{ type: "text", text: `pong: ${message}` }],
-  }),
-);
+registerGoogleTools(server);
 
-async function main() {
+async function main(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  // stderr so it doesn't corrupt the stdio JSON-RPC stream.
-  console.error("kozocom-mcp server running on stdio");
+  // Log to stderr so it doesn't corrupt the stdio JSON-RPC stream.
+  console.error(`${SERVER_NAME} v${SERVER_VERSION} running on stdio`);
 }
 
 main().catch((error) => {
-  console.error("Fatal error starting kozocom-mcp:", error);
+  console.error("Fatal error starting kozocom-google MCP server:", error);
   process.exit(1);
 });
