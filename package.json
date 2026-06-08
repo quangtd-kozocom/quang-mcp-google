@@ -1,5 +1,5 @@
 {
-  "name": "kozocom-mcp",
+  "name": "kozocom-mcp-google",
   "version": "0.1.0",
   "description": "Kozocom MCP server",
   "type": "module",
@@ -29,6 +29,7 @@
     "@types/node": "^25.9.2",
     "oxlint": "^1.68.0",
     "tsx": "^4.22.4",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
   }
 }
