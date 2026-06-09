@@ -210,10 +210,10 @@ export async function runSetup(options: SetupOptions = {}): Promise<void> {
 
   if (!(await exists(CLIENT_SECRET_PATH))) {
     if (EMBEDDED_OAUTH_CLIENT) {
-      console.error("OAuth client config: using embedded public OAuth client.");
+      console.error("OAuth client config: using embedded OAuth client.");
     } else {
       console.error(
-        "\nNo OAuth client config was found. Install a package built with the embedded public OAuth client, or save a Google OAuth client JSON here:",
+        "\nNo OAuth client config was found. Install a package built with the embedded OAuth client, or save a Google OAuth client JSON here:",
       );
       console.error(`  ${CLIENT_SECRET_PATH}`);
     }

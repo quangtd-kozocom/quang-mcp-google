@@ -44,7 +44,7 @@ const SUCCESS_HTML = (email?: string) =>
 
 // ── Token & OAuth client persistence ─────────────────────────────────────────
 
-/** Read and normalize the OAuth client config (embedded public client or local JSON). */
+/** Read and normalize the OAuth client config (embedded client or local JSON). */
 export async function readClientSecret(): Promise<ClientSecret> {
   let raw: string;
   try {
@@ -55,7 +55,7 @@ export async function readClientSecret(): Promise<ClientSecret> {
     }
     throw new NotAuthenticatedError(
       `No OAuth client config found at ${CLIENT_SECRET_PATH}. ` +
-        `Use a package built with the embedded public OAuth client, place one there, ` +
+        `Use a package built with the embedded OAuth client, place one there, ` +
         `or set GOOGLE_OAUTH_CREDENTIALS to its path.`,
     );
   }

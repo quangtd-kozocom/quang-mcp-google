@@ -44,3 +44,6 @@ const SAFE_MODE_ENV = "KOZOCOM_MCP_SAFE_MODE";
 
 /** Whether this process is running with dangerous tools disabled. */
 export const SAFE_MODE = process.env[SAFE_MODE_ENV] === "1";
+
+/** Env var naming the only directory local_path/save_path may read/write. */
+export const LOCAL_FILE_ROOT_ENV = "KOZOCOM_MCP_LOCAL_FILE_ROOT";

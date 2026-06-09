@@ -108,7 +108,6 @@ describe("danger classification", () => {
         "google_auth_status",
         "drive_list_files",
         "drive_get_file",
-        "drive_download_file",
         "sheets_get_spreadsheet",
         "sheets_read_range",
       ]),
@@ -119,6 +118,7 @@ describe("danger classification", () => {
     expect(new Set(DANGEROUS_TOOL_NAMES)).toEqual(
       new Set([
         "drive_create_folder",
+        "drive_download_file",
         "drive_upload_file",
         "drive_update_file",
         "drive_copy_file",

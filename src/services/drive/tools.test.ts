@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { drive_v3 } from "googleapis";
 
 vi.mock("../../google/client.js", () => ({
@@ -37,7 +37,12 @@ function fakeDrive() {
 /** Cast a fake to the Drive type for passing into handlers. */
 const asDrive = (d: ReturnType<typeof fakeDrive>): drive_v3.Drive => d as unknown as drive_v3.Drive;
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.stubEnv("KOZOCOM_MCP_LOCAL_FILE_ROOT", "");
+});
+
+afterEach(() => vi.unstubAllEnvs());
 
 describe("driveListFiles", () => {
   it("appends trashed filter, passes pagination, and returns next token", async () => {
@@ -104,6 +109,14 @@ describe("driveDownloadFile", () => {
     expect(res.isError).toBe(true);
     expect(res.content[0].text).toContain("save_path");
   });
+
+  it("rejects save_path when local file root is not configured", async () => {
+    const drive = fakeDrive();
+    await expect(driveDownloadFile(asDrive(drive), { file_id: "1", save_path: "doc.txt" })).rejects.toThrow(
+      "Local file access is disabled",
+    );
+    expect(drive.files.get).not.toHaveBeenCalled();
+  });
 });
 
 describe("driveDeleteFile", () => {
@@ -132,6 +145,14 @@ describe("driveUploadFile", () => {
     const drive = fakeDrive();
     const res = await driveUploadFile(asDrive(drive), { name: "f.txt" });
     expect(res.isError).toBe(true);
+    expect(drive.files.create).not.toHaveBeenCalled();
+  });
+
+  it("rejects local_path when local file root is not configured", async () => {
+    const drive = fakeDrive();
+    await expect(driveUploadFile(asDrive(drive), { name: "f.txt", local_path: "f.txt" })).rejects.toThrow(
+      "Local file access is disabled",
+    );
     expect(drive.files.create).not.toHaveBeenCalled();
   });
 });

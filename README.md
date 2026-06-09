@@ -22,6 +22,10 @@ kozocom-mcp client codex        # print safe (read-only) MCP config
 
 ## Tools
 
+Local file reads/writes are disabled by default. To use `drive_upload_file.local_path` or
+`drive_download_file.save_path`, set `KOZOCOM_MCP_LOCAL_FILE_ROOT` to an allowlisted directory;
+relative paths resolve inside that directory, and symlink escapes are rejected.
+
 **Auth** — sign-in/out are CLI-only (`kozocom-mcp auth login`/`logout`).
 
 | Tool | Does |

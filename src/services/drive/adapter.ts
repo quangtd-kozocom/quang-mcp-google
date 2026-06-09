@@ -2,6 +2,7 @@ import { createReadStream } from "node:fs";
 import { writeFile } from "node:fs/promises";
 import { Readable } from "node:stream";
 import type { drive_v3 } from "googleapis";
+import { safeReadPath, safeWritePath } from "../../core/local-file.js";
 
 const DRIVE_FILE_FIELDS =
   "id, name, mimeType, modifiedTime, createdTime, size, parents, trashed, webViewLink, iconLink, owners(displayName, emailAddress)";
@@ -58,6 +59,7 @@ export class DriveFileAdapter {
     exportMimeType?: string;
     savePath?: string;
   }): Promise<DriveDownloadResult> {
+    const savePath = args.savePath ? await safeWritePath(args.savePath) : undefined;
     const meta = await this.drive.files.get({
       fileId: args.fileId,
       fields: "id, name, mimeType, size",
@@ -78,14 +80,14 @@ export class DriveFileAdapter {
         );
     const buffer = Buffer.from(res.data as ArrayBuffer);
     const mimeType = native ? (exportMime as string) : (meta.data.mimeType ?? "application/octet-stream");
-    if (args.savePath) {
-      await writeFile(args.savePath, buffer);
+    if (savePath) {
+      await writeFile(savePath, buffer);
       return {
         fileId: args.fileId,
         name: meta.data.name,
         mimeType,
         bytes: buffer.byteLength,
-        savedTo: args.savePath,
+        savedTo: savePath,
         binaryRequiresSavePath: false,
       };
     }
@@ -128,7 +130,9 @@ export class DriveFileAdapter {
     mimeType?: string;
     parentId?: string;
   }): Promise<drive_v3.Schema$File> {
-    const body = args.localPath ? createReadStream(args.localPath) : Readable.from(args.content ?? "");
+    const body = args.localPath
+      ? createReadStream(await safeReadPath(args.localPath))
+      : Readable.from(args.content ?? "");
     const { data } = await this.drive.files.create({
       requestBody: {
         name: args.name,

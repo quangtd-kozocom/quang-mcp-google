@@ -3,6 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 const clientId = process.env.KOZOCOM_GOOGLE_OAUTH_CLIENT_ID;
+const clientSecret = process.env.KOZOCOM_GOOGLE_OAUTH_CLIENT_SECRET;
 const outputPath = join("dist", "google", "generated", "oauth-client.js");
 
 if (!clientId) {
@@ -11,7 +12,7 @@ if (!clientId) {
 }
 
 const contents = `export const EMBEDDED_OAUTH_CLIENT = ${JSON.stringify(
-  { client_id: clientId },
+  { client_id: clientId, ...(clientSecret ? { client_secret: clientSecret } : {}) },
   null,
   2,
 )};\n`;
