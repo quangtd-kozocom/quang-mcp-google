@@ -92,11 +92,9 @@ describe("danger classification", () => {
     );
   });
 
-  it("treats every mutating tool (incl. login/logout) as dangerous", () => {
+  it("treats every mutating tool as dangerous", () => {
     expect(new Set(DANGEROUS_TOOL_NAMES)).toEqual(
       new Set([
-        "google_login",
-        "google_logout",
         "drive_create_folder",
         "drive_upload_file",
         "drive_update_file",

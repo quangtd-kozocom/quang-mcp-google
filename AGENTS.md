@@ -21,9 +21,18 @@ oxlint. Package manager: **pnpm**.
 | `pnpm lint`      | oxlint                                                |
 | `pnpm test`      | Run vitest once (fully mocked, no network/credentials) |
 | `pnpm test:watch`| vitest watch mode                                     |
-| `pnpm login`     | Run the OAuth flow once (needs built `dist/`)         |
-| `pnpm login:dev` | OAuth flow from source via tsx                        |
+| `pnpm login`     | Sign in (`auth login`); needs built `dist/`           |
+| `pnpm logout`    | Sign out (`auth logout`) — delete the cached token    |
+| `pnpm run setup` | Check setup and print MCP config                      |
+| `pnpm run client`| Print MCP config with dangerous tools disabled        |
+| `pnpm login:dev` / `logout:dev` / `setup:dev` / `client:dev` | Same commands from source via tsx |
 | `pnpm dev`       | Run server with hot reload                            |
+
+> `setup` and `client` are pnpm built-ins, so use `pnpm run setup` / `pnpm run client` (bare
+> `pnpm client` runs pnpm's own command and never reaches the script). Pass flags **without** a
+> `--` separator — pnpm forwards `--` literally and commander rejects it. So:
+> `pnpm run client codex` ✅ (not `pnpm run client -- codex`). Or skip pnpm entirely and call
+> the binary: `node dist/cli.js client codex`. The real entry point is the `kozocom-mcp` binary.
 
 **Before considering any change done:** `pnpm typecheck && pnpm lint && pnpm test` must all pass,
 and `pnpm build` must succeed.
@@ -32,22 +41,58 @@ and `pnpm build` must succeed.
 
 ```
 src/
-  index.ts          # entry: McpServer + register*Tools() + stdio transport
-  login.ts          # standalone `pnpm login` CLI
-  constants.ts      # SCOPES, file paths, CHARACTER_LIMIT, server name/version
+  cli.ts            # commander CLI: `auth login|logout|status` / `setup` / `client` commands; default = start server
+  index.ts          # startServer(): McpServer + registerGoogleTools() + stdio transport
+  login.ts          # legacy standalone login entry (login now goes through cli.ts)
+  setup.ts          # runSetup(), mcpConfigSnippet(), configReport() — per-client MCP config text
+  constants.ts      # SCOPES, file paths, CHARACTER_LIMIT, server name/version, SAFE_MODE(_ENV)
   format.ts         # ToolResult helpers, truncation, handleGoogleError, NotAuthenticatedError
   auth.ts           # OAuth2 token load/save/clear, status, loopback login flow (module functions)
   google.ts         # getGoogleClients() -> authorized { drive, sheets }
   drive-adapter.ts  # DriveFileAdapter: anti-corruption layer over the Drive v3 API
   sheets-adapter.ts # SheetsAdapter: anti-corruption layer over the Sheets v4 API
   tools/
-    define.ts       # tool / driveTool / sheetsTool factories + registerAll (type-safe registration)
-    auth.ts         # google_login, google_auth_status, google_logout
+    define.ts       # tool / driveTool / sheetsTool factories + registerAll; isReadOnlyTool;
+                    #   each ToolRegistration carries its toolName + annotations for filtering
+    auth.ts         # google_auth_status (login/logout are CLI-only: `kozocom-mcp auth login|logout`)
     drive.ts        # drive_* tools
     sheets.ts       # sheets_* tools
-    google.ts       # registerGoogleTools(): aggregate + register every tool
+    google.ts       # googleTools, selectGoogleTools(safeMode), READ_ONLY/DANGEROUS_TOOL_NAMES,
+                    #   registerGoogleTools(): aggregate + register the selected tools
   **/*.test.ts      # colocated vitest unit tests
 ```
+
+## CLI & safe mode
+
+The `kozocom-mcp` binary (`src/cli.ts`, built on `commander`) has these commands plus a default:
+
+- `auth login` — run the OAuth flow and cache the token.
+- `auth logout` — delete the cached token (sign out / switch accounts).
+- `auth status` — print the signed-in account, granted scopes, and token expiry.
+- `setup` — check config dir / client secret, report auth status, print MCP config (`-c/--client`,
+  `-y/--yes`). Login is **not** part of setup anymore — it directs you to `auth login`.
+- `client [agent]` — print MCP config with **dangerous tools disabled** (positional
+  `agent` = `codex|claude|copilot|all`, default `all`; `--include-dangerous` keeps them all).
+- no command (or `start`/`server`) — launch the stdio server.
+
+> Sign-in/out are **CLI-only** — there are no `google_login`/`google_logout` MCP tools. An
+> untrusted client can never trigger a browser consent or wipe the token; only `google_auth_status`
+> remains as a (read-only) tool.
+
+**"Dangerous" = any tool that is not read-only** (`readOnlyHint !== true`) — every create/write/
+delete/share tool. The classification is driven solely by the
+honest `readOnlyHint` annotation via `isReadOnlyTool` (`tools/define.ts`); the enabled/disabled name
+lists in `tools/google.ts` derive from it, so adding a tool needs no extra wiring. Disabling happens
+two independent ways:
+
+- **Client-side (what `client` emits):** Codex `enabled_tools`/`disabled_tools`, a Claude Code
+  `permissions.deny` list (`mcp__kozocom-google__<tool>`), and a read-only `tools` set for VS Code
+  Copilot. The server still registers everything; the client just won't call the dangerous tools.
+- **Server-side (`KOZOCOM_MCP_SAFE_MODE=1`):** `selectGoogleTools(true)` registers only read-only
+  tools, so the dangerous ones never exist on the wire. This is the harder guarantee.
+
+When you add or re-annotate a tool, the safe set updates automatically — but keep `setup.test.ts`'s
+enabled/disabled name assertions in sync.
 
 ## Conventions (match these when editing)
 
@@ -95,4 +140,6 @@ src/
 
 - This server holds **full read/write** scopes for Drive and Sheets. Treat write/delete tools as
   real side effects. `drive_delete_file` trashes by default; `permanent: true` is irreversible.
+- For untrusted/agentic clients, hand out a `kozocom-mcp client` snippet (dangerous tools disabled)
+  and/or run the server with `KOZOCOM_MCP_SAFE_MODE=1`. See **CLI & safe mode** above.
 - Don't log token contents or secrets to stdout — stdout is the JSON-RPC channel; log to **stderr**.

@@ -2,7 +2,7 @@ import { access, mkdir, readFile, stat } from "node:fs/promises";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stderr as output } from "node:process";
 import { CLIENT_SECRET_PATH, CONFIG_DIR } from "./constants.js";
-import { getAuthStatus, runLoginFlow } from "./auth.js";
+import { getAuthStatus } from "./auth.js";
 import { DANGEROUS_TOOL_NAMES, READ_ONLY_TOOL_NAMES } from "./tools/google.js";
 
 const SERVER_KEY = "kozocom-google";
@@ -11,7 +11,6 @@ type ClientName = "codex" | "claude" | "copilot" | "all";
 
 interface SetupOptions {
   client?: ClientName;
-  login?: boolean;
   yes?: boolean;
 }
 
@@ -173,12 +172,6 @@ async function chooseClient(defaultClient: ClientName, yes: boolean): Promise<Cl
   return parseClient(answer) ?? defaultClient;
 }
 
-async function shouldLogin(defaultValue: boolean, yes: boolean): Promise<boolean> {
-  if (yes) return defaultValue;
-  const answer = await prompt("Run Google login now? yes or no", defaultValue ? "yes" : "no");
-  return ["y", "yes", "true", "1"].includes(answer.toLowerCase());
-}
-
 export async function runSetup(options: SetupOptions = {}): Promise<void> {
   await mkdir(CONFIG_DIR, { recursive: true });
 
@@ -203,17 +196,7 @@ export async function runSetup(options: SetupOptions = {}): Promise<void> {
   if (status.authenticated) {
     console.error(`Google auth: signed in${status.email ? ` as ${status.email}` : ""}.`);
   } else {
-    console.error("Google auth: not signed in.");
-    const login = options.login ?? (await shouldLogin(await exists(CLIENT_SECRET_PATH), options.yes ?? false));
-    if (login) {
-      const result = await runLoginFlow({
-        openBrowser: true,
-        onUrl: (url) => {
-          console.error(`If the browser didn't open, visit:\n${url}\n`);
-        },
-      });
-      console.error(`Signed in${result.email ? ` as ${result.email}` : ""}.`);
-    }
+    console.error("Google auth: not signed in. Run `kozocom-mcp auth login` to sign in.");
   }
 
   const client = options.client ?? (await chooseClient("all", options.yes ?? false));

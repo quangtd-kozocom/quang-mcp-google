@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import { Command, Option } from "commander";
-import { runLoginFlow } from "./auth.js";
+import { clearToken, getAuthStatus, runLoginFlow } from "./auth.js";
 import { SERVER_VERSION, TOKEN_PATH } from "./constants.js";
 import { startServer } from "./index.js";
-import { type ClientName, configReport, runSetup } from "./setup.js";
+import { type ClientName, configReport, parseClient, runSetup } from "./setup.js";
 
 const CLIENT_CHOICES = ["codex", "claude", "copilot", "all"] as const;
 
@@ -18,6 +18,22 @@ async function login(): Promise<void> {
   console.error(`\nSigned in${result.email ? ` as ${result.email}` : ""}.`);
   console.error(`Token saved to ${TOKEN_PATH}`);
   console.error(`Granted scopes: ${result.scopes.join(", ")}`);
+}
+
+async function logout(): Promise<void> {
+  const removed = await clearToken();
+  console.error(removed ? `Signed out — cached token deleted (${TOKEN_PATH}).` : "No cached token to remove.");
+}
+
+async function status(): Promise<void> {
+  const result = await getAuthStatus();
+  if (!result.authenticated) {
+    console.error("Not signed in. Run `kozocom-mcp auth login` to sign in.");
+    return;
+  }
+  console.error(`Signed in${result.email ? ` as ${result.email}` : ""}.`);
+  if (result.scopes?.length) console.error(`Granted scopes: ${result.scopes.join(", ")}`);
+  if (result.expiryDate) console.error(`Access token expires: ${new Date(result.expiryDate).toISOString()}`);
 }
 
 function buildProgram(): Command {
@@ -37,40 +53,45 @@ function buildProgram(): Command {
       await startServer();
     });
 
-  program
+  // `auth` group: manage the cached Google OAuth credentials.
+  const auth = program.command("auth").description("Manage Google sign-in (login / logout / status)");
+  auth
     .command("login")
     .description("Sign in to Google and cache the OAuth token")
     .action(async () => {
       await login();
     });
-
-  program
-    .command("setup")
-    .description("Check setup, optionally sign in, and print MCP config")
-    .addOption(
-      new Option("-c, --client <client>", "MCP client to configure").choices(CLIENT_CHOICES),
-    )
-    .option("--login", "Run Google login during setup")
-    .option("--no-login", "Skip Google login during setup")
-    .option("-y, --yes", "Accept defaults without prompting")
-    .action(async (opts: { client?: ClientName; login?: boolean; yes?: boolean }, command: Command) => {
-      // Commander defaults `login` to true because of `--no-login`; only honor
-      // it when the user actually passed a flag, else leave it for the prompt.
-      const loginSet = command.getOptionValueSource("login") === "cli";
-      await runSetup({ client: opts.client, login: loginSet ? opts.login : undefined, yes: opts.yes });
+  auth
+    .command("logout")
+    .description("Delete the cached Google OAuth token")
+    .action(async () => {
+      await logout();
+    });
+  auth
+    .command("status")
+    .description("Show the signed-in account, scopes, and token expiry")
+    .action(async () => {
+      await status();
     });
 
   program
-    .command("config")
-    .description("Print MCP config for a client with dangerous tools disabled")
+    .command("setup")
+    .description("Check setup and print MCP config (sign in with `auth login`)")
     .addOption(
-      new Option("-c, --client <client>", "MCP client to configure")
-        .choices(CLIENT_CHOICES)
-        .default("all"),
+      new Option("-c, --client <client>", "MCP client to configure").choices(CLIENT_CHOICES),
     )
+    .option("-y, --yes", "Accept defaults without prompting")
+    .action(async (opts: { client?: ClientName; yes?: boolean }) => {
+      await runSetup({ client: opts.client, yes: opts.yes });
+    });
+
+  program
+    .command("client [agent]")
+    .description("Print MCP config for a coding agent with dangerous tools disabled")
     .option("--include-dangerous", "Keep destructive tools enabled (not recommended)", false)
-    .action((opts: { client: ClientName; includeDangerous: boolean }) => {
-      console.log(configReport({ client: opts.client, safeMode: !opts.includeDangerous }));
+    .action((agent: string | undefined, opts: { includeDangerous: boolean }) => {
+      const client = parseClient(agent) ?? "all";
+      console.log(configReport({ client, safeMode: !opts.includeDangerous }));
     });
 
   return program;

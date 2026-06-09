@@ -43,7 +43,7 @@ describe("truncate", () => {
 describe("handleGoogleError", () => {
   it("guides to login for NotAuthenticatedError", () => {
     const msg = handleGoogleError(new NotAuthenticatedError("No saved Google credentials."));
-    expect(msg).toContain("google_login");
+    expect(msg).toContain("auth login");
   });
 
   it("formats Zod validation errors", () => {

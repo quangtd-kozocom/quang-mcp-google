@@ -170,6 +170,6 @@ describe("auth wrapper", () => {
     registerDriveTools(server as any);
     const res = await handlers.drive_get_file({ file_id: "x", response_format: "markdown" });
     expect(res.isError).toBe(true);
-    expect(res.content[0].text).toContain("google_login");
+    expect(res.content[0].text).toContain("auth login");
   });
 });

@@ -25,15 +25,18 @@ Or use the installer script:
 curl -fsSL https://raw.githubusercontent.com/kozocom/kozocom-mcp/main/scripts/install.sh | sh
 ```
 
-The CLI (built on `commander`) has three commands:
+The CLI (built on `commander`) has these commands:
 
-- `kozocom-mcp login` — sign in to Google and cache the OAuth token.
-- `kozocom-mcp setup` — check the config directory, verify the OAuth client secret, optionally
-  run Google login, and print MCP config for Codex, Claude Code, and VS Code Copilot.
-- `kozocom-mcp config [--client codex|claude|copilot|all]` — print MCP config with the **dangerous
-  (mutating) tools disabled**, leaving only the read-only tools enabled. Each client uses its own
-  mechanism: Codex `enabled_tools`/`disabled_tools`, a Claude Code `permissions.deny` list, and a
-  named read-only `tools` set for VS Code Copilot. Pass `--include-dangerous` to keep every tool.
+- `kozocom-mcp auth login` — sign in to Google and cache the OAuth token.
+- `kozocom-mcp auth logout` — delete the cached token (sign out / switch accounts).
+- `kozocom-mcp auth status` — show the signed-in account, granted scopes, and token expiry.
+- `kozocom-mcp setup` — check the config directory, verify the OAuth client secret, report auth
+  status, and print MCP config for Codex, Claude Code, and VS Code Copilot.
+- `kozocom-mcp client [codex|claude|copilot|all]` — print MCP config with the **dangerous
+  (mutating) tools disabled**, leaving only the read-only tools enabled (the agent name is a
+  positional argument, default `all`). Each client uses its own mechanism: Codex
+  `enabled_tools`/`disabled_tools`, a Claude Code `permissions.deny` list, and a named read-only
+  `tools` set for VS Code Copilot. Pass `--include-dangerous` to keep every tool.
 
 Run `kozocom-mcp` (or `start`) with no command to launch the server over stdio.
 
@@ -52,9 +55,10 @@ First, follow **[SETUP.md](./SETUP.md)** to create the Google Cloud OAuth creden
 
 | Command          | Description                                  |
 | ---------------- | -------------------------------------------- |
-| `pnpm setup`     | Check setup, sign in, and print MCP config   |
+| `pnpm setup`     | Check setup and print MCP config             |
 | `pnpm login`     | Sign in to Google (run once after `build`)   |
-| `pnpm run config`| Print MCP config with dangerous tools disabled |
+| `pnpm logout`    | Sign out (delete the cached token)           |
+| `pnpm run client`| Print MCP config with dangerous tools disabled |
 | `pnpm dev`       | Run the server with hot reload (`tsx watch`) |
 | `pnpm build`     | Compile TypeScript to `dist/`                |
 | `pnpm start`     | Run the compiled server over stdio           |
@@ -65,9 +69,10 @@ First, follow **[SETUP.md](./SETUP.md)** to create the Google Cloud OAuth creden
 ## Tools
 
 **Auth**
-- `google_login` — open the browser and sign in
 - `google_auth_status` — show the signed-in account, scopes, token expiry
-- `google_logout` — delete the cached token
+
+> Sign-in and sign-out are **terminal commands**, not tools: `kozocom-mcp auth login` /
+> `kozocom-mcp auth logout` (or `kozocom-mcp auth status`). See **CLI** below.
 
 **Drive**
 - `drive_list_files` — list / search files (Drive `q` query, pagination)
@@ -109,7 +114,7 @@ If running from source, build first (`pnpm build`), then sign in (`pnpm login`) 
 
 ```bash
 kozocom-mcp setup
-kozocom-mcp login
+kozocom-mcp auth login
 kozocom-mcp
 ```
 
@@ -169,4 +174,4 @@ In `.vscode/mcp.json` (or the global `mcp.json`):
 ## Security
 
 `client_secret.json` and `token.json` are secrets and are git-ignored. The token grants full
-read/write to your Drive and Sheets — keep it private. Run `google_logout` to revoke locally.
+read/write to your Drive and Sheets — keep it private. Run `kozocom-mcp auth logout` to revoke locally.

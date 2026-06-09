@@ -69,7 +69,7 @@ page; close the tab. The token is saved to `~/.kozocom-mcp/token.json` and reuse
 For a login-only retry, run:
 
 ```bash
-kozocom-mcp login
+kozocom-mcp auth login
 # or, from source:
 pnpm login
 ```
@@ -91,8 +91,8 @@ npx @modelcontextprotocol/inspector node dist/index.js
 | Cached token    | `~/.kozocom-mcp/token.json`        | `GOOGLE_OAUTH_TOKEN`        |
 | Config dir      | `~/.kozocom-mcp/`                  | `KOZOCOM_MCP_DIR`           |
 
-To switch Google accounts: run the `google_logout` tool (or delete `token.json`), then
-`pnpm login` again. These files are secrets — they're already git-ignored.
+To switch Google accounts: run `kozocom-mcp auth logout` (or delete `token.json`), then
+`kozocom-mcp auth login` again. These files are secrets — they're already git-ignored.
 
 ## Troubleshooting
 

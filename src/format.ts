@@ -83,7 +83,7 @@ function statusOf(error: unknown): number | undefined {
  */
 export function handleGoogleError(error: unknown): string {
   if (error instanceof NotAuthenticatedError) {
-    return `Error: ${error.message} Run the \`google_login\` tool (or \`pnpm login\` in the server directory) to sign in, then retry.`;
+    return `Error: ${error.message} Run \`kozocom-mcp auth login\` in a terminal to sign in, then retry.`;
   }
   if (error instanceof z.ZodError) {
     const issues = error.issues.map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`).join("; ");
@@ -96,7 +96,7 @@ export function handleGoogleError(error: unknown): string {
     case 400:
       return `Error: Bad request — ${detail}. Check IDs, ranges (e.g. 'Sheet1!A1:C10'), and parameters.`;
     case 401:
-      return "Error: Authentication expired or revoked. Run the `google_login` tool to sign in again.";
+      return "Error: Authentication expired or revoked. Run `kozocom-mcp auth login` to sign in again.";
     case 403:
       return `Error: Permission denied — ${detail}. You may not have access to this file, or the required API/scope is not enabled.`;
     case 404:
