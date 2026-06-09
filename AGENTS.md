@@ -15,6 +15,8 @@ oxlint. Package manager: **pnpm**.
 
 1. **Pick the simplest option.** Before implementing, ask: is this the simplest, easiest-to-read,
    easiest-to-maintain way to do it? If not, reconsider before writing code.
+2. **Use the `caveman` skill** for communication — it cuts token usage ~75% while keeping full
+   technical accuracy.
 
 ## Commands
 
