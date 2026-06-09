@@ -32,4 +32,4 @@ git commit -m "${version#v}"
 git tag "$version"
 git push origin main "$version"
 
-echo "Pushed $version. CI will publish to npm: https://github.com/quangtd-kozocom/kozocom-mcp-google/actions"
+echo "Pushed $version. CI will publish to npm: https://github.com/quangtd-kozocom/quang-mcp-google/actions"

@@ -6,7 +6,7 @@ client ID ships in npm, consent happens in browser, token is cached and auto-ref
 ## Quick start
 
 ```bash
-npm install -g kozocom-mcp-google
+npm install -g quang-mcp-google
 kozocom-mcp auth login          # browser consent, caches token
 kozocom-mcp client codex        # print safe (read-only) MCP config
 ```

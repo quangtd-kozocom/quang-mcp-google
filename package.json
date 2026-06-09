@@ -1,12 +1,12 @@
 {
-  "name": "kozocom-mcp-google",
+  "name": "quang-mcp-google",
   "version": "0.1.9",
   "description": "Kozocom MCP server",
   "type": "module",
   "packageManager": "pnpm@11.5.2",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/quangtd-kozocom/kozocom-mcp-google.git"
+    "url": "git+ssh://git@github.com/quangtd-kozocom/quang-mcp-google.git"
   },
   "publishConfig": {
     "access": "public"
