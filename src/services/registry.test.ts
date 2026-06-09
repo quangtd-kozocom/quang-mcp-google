@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { DANGEROUS_TOOL_NAMES, googleTools, READ_ONLY_TOOL_NAMES, selectGoogleTools } from "./google.js";
-import { isReadOnlyTool } from "./define.js";
+import { DANGEROUS_TOOL_NAMES, googleTools, READ_ONLY_TOOL_NAMES, selectGoogleTools } from "./registry.js";
+import { isReadOnlyTool } from "../core/tool.js";
 
 describe("selectGoogleTools", () => {
   it("returns every tool when not in safe mode", () => {

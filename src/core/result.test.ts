@@ -6,7 +6,7 @@ import {
   NotAuthenticatedError,
   toolResult,
   truncate,
-} from "./format.js";
+} from "./result.js";
 
 describe("toolResult / errorResult", () => {
   it("wraps text and structured content", () => {

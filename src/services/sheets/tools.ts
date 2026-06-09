@@ -1,14 +1,13 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { sheets_v4 } from "googleapis";
-import { type CellValue, SheetsAdapter } from "../sheets-adapter.js";
+import { type CellValue, SheetsAdapter } from "./adapter.js";
 import {
   formatResponse,
   responseFormatSchema,
   type ToolResult,
   toolResult,
-} from "../format.js";
-import { type ArgsOf, registerAll, sheetsTool, type ToolRegistration } from "./define.js";
+} from "../../core/result.js";
+import { type ArgsOf, sheetsTool, type ToolRegistration } from "../../core/tool.js";
 
 // ── Shared schema fragments & rendering ───────────────────────────────────────
 
@@ -665,7 +664,3 @@ export const sheetsTools: readonly ToolRegistration[] = [
   setDataValidationTool,
   batchUpdateTool,
 ];
-
-export function registerSheetsTools(server: McpServer): void {
-  registerAll(server, sheetsTools);
-}

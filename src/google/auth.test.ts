@@ -9,8 +9,8 @@ vi.mock("node:fs/promises", () => ({
 
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { clearToken, loadToken, readClientSecret, saveToken } from "./auth.js";
-import { TOKEN_PATH } from "./constants.js";
-import { NotAuthenticatedError } from "./format.js";
+import { TOKEN_PATH } from "../config/constants.js";
+import { NotAuthenticatedError } from "../core/result.js";
 
 const mockReadFile = vi.mocked(readFile);
 const mockWriteFile = vi.mocked(writeFile);

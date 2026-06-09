@@ -2,8 +2,8 @@
 import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { SAFE_MODE, SERVER_NAME, SERVER_VERSION } from "./constants.js";
-import { registerGoogleTools } from "./tools/google.js";
+import { SAFE_MODE, SERVER_NAME, SERVER_VERSION } from "./config/constants.js";
+import { registerGoogleTools } from "./services/registry.js";
 
 export async function startServer(): Promise<void> {
   const server = new McpServer({

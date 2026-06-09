@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { drive_v3 } from "googleapis";
 
-vi.mock("../google.js", () => ({
+vi.mock("../../google/client.js", () => ({
   getGoogleClients: vi.fn(),
 }));
 
-import { getGoogleClients } from "../google.js";
+import { getGoogleClients } from "../../google/client.js";
+import { registerAll } from "../../core/tool.js";
 import {
   driveCopyFile,
   driveCreateFolder,
@@ -13,10 +14,10 @@ import {
   driveDownloadFile,
   driveGetFile,
   driveListFiles,
+  driveTools,
   driveUpdateFile,
   driveUploadFile,
-  registerDriveTools,
-} from "./drive.js";
+} from "./tools.js";
 
 /** Build a fake Drive client whose methods are vi mocks. */
 function fakeDrive() {
@@ -199,7 +200,7 @@ describe("handlers surface API errors", () => {
 
 describe("auth wrapper", () => {
   it("maps NotAuthenticated into an actionable error result", async () => {
-    const { NotAuthenticatedError } = await import("../format.js");
+    const { NotAuthenticatedError } = await import("../../core/result.js");
     vi.mocked(getGoogleClients).mockRejectedValue(new NotAuthenticatedError("No saved Google credentials."));
     const handlers: Record<string, (args: unknown) => Promise<{ isError?: boolean; content: { text: string }[] }>> = {};
     const server = {
@@ -208,7 +209,7 @@ describe("auth wrapper", () => {
       },
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    registerDriveTools(server as any);
+    registerAll(server as any, driveTools);
     const res = await handlers.drive_get_file({ file_id: "x", response_format: "markdown" });
     expect(res.isError).toBe(true);
     expect(res.content[0].text).toContain("auth login");

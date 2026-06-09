@@ -3,7 +3,7 @@ import { writeFile } from "node:fs/promises";
 import { Readable } from "node:stream";
 import type { drive_v3 } from "googleapis";
 
-export const DRIVE_FILE_FIELDS =
+const DRIVE_FILE_FIELDS =
   "id, name, mimeType, modifiedTime, createdTime, size, parents, trashed, webViewLink, iconLink, owners(displayName, emailAddress)";
 
 const DRIVE_LIST_FIELDS = `nextPageToken, files(${DRIVE_FILE_FIELDS})`;

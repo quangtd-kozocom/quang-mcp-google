@@ -22,16 +22,26 @@ oxlint. PM: **pnpm**. Use the `caveman` skill to communicate.
 
 ## Layout (`src/`)
 
-- `cli.ts` — CLI: `auth login|logout|status` / `setup` / `client`; no command = start server
-- `index.ts` — `startServer()`: McpServer + `registerGoogleTools()` + stdio
-- `setup.ts` — `runSetup()`, MCP config snippets per client
-- `constants.ts` — SCOPES, paths, `CHARACTER_LIMIT`, SAFE_MODE
-- `format.ts` — `ToolResult` helpers, truncation, `handleGoogleError`, `NotAuthenticatedError`
-- `auth.ts` — OAuth token load/save/clear, loopback login
-- `google.ts` — `getGoogleClients()` → `{ drive, sheets }`
-- `drive-adapter.ts` / `sheets-adapter.ts` — anti-corruption layers over the Google APIs
-- `tools/` — `define.ts` (factories + `registerAll`, `isReadOnlyTool`), `auth.ts`, `drive.ts`,
-  `sheets.ts`, `google.ts` (`selectGoogleTools`, tool-name lists, `registerGoogleTools`)
+Organized as **feature modules**: shared kernel (`config`, `core`), Google integration
+(`google`), and one self-contained folder per service under `services/`. Adding a Google service
+= one new `services/<name>/` folder (`adapter.ts` + `tools.ts`) wired into `services/registry.ts`.
+
+- `cli.ts` — CLI entry (bin): `auth login|logout|status` / `setup` / `client`; no command = start server
+- `index.ts` — server entry (bin): `startServer()` = McpServer + `registerGoogleTools()` + stdio
+- `config/constants.ts` — SCOPES, paths, `CHARACTER_LIMIT`, `SAFE_MODE`
+- `core/` — MCP framework, service-agnostic:
+  - `result.ts` — `ToolResult` helpers, truncation, `handleGoogleError`, `NotAuthenticatedError`, `responseFormatSchema`
+  - `tool.ts` — `tool`/`driveTool`/`sheetsTool` factories, `registerAll`, `isReadOnlyTool`, `ArgsOf`
+- `google/` — Google integration:
+  - `auth.ts` — OAuth token load/save/clear, loopback login
+  - `client.ts` — `getGoogleClients()` → `{ drive, sheets }`
+  - `generated/oauth-client.ts` — embedded OAuth client stub (overwritten in `dist/` at build time)
+- `services/` — one folder per service + the aggregating registry:
+  - `registry.ts` — `googleTools`, `selectGoogleTools`, tool-name lists, `registerGoogleTools`
+  - `auth/tools.ts` — `google_auth_status`
+  - `drive/` — `adapter.ts` (anti-corruption layer) + `tools.ts` (handlers + registrations)
+  - `sheets/` — `adapter.ts` + `tools.ts`
+- `setup/setup.ts` — `runSetup()`, MCP config snippets per client
 - `**/*.test.ts` — colocated vitest tests
 
 ## CLI & safe mode
@@ -44,13 +54,14 @@ classification derives automatically from annotations via `isReadOnlyTool`. Two 
   tools; server still registers everything.
 - **Server-side** (`KOZOCOM_MCP_SAFE_MODE=1`): `selectGoogleTools(true)` registers only read-only tools.
 
-Adding/re-annotating a tool updates the safe set automatically — but keep `setup.test.ts` assertions in sync.
+Adding/re-annotating a tool updates the safe set automatically — but keep `setup/setup.test.ts`
+and `services/registry.test.ts` assertions in sync.
 
 ## Conventions
 
 - **Simplest, compact:** write code the most compact way that stays readable — caveman spirit applied
   to code; no boilerplate, no ceremony.
-- **Register** tools via `tool`/`driveTool`/`sheetsTool` factory in `define.ts`
+- **Register** tools via `tool`/`driveTool`/`sheetsTool` factory in `core/tool.ts`
   (`{ name, title, description, inputSchema, annotations, run }`) → `ToolRegistration[]` → `registerAll`.
   `inputSchema` is a **Zod raw shape**, not `z.object()`.
 - **Naming:** snake_case, service-prefixed (`drive_*`, `sheets_*`, `google_*`).
@@ -76,7 +87,7 @@ mock `../google.js` only for the auth-failure path. Each handler needs happy-pat
 
 - Secrets in `~/.kozocom-mcp/` (override: `KOZOCOM_MCP_DIR`, `GOOGLE_OAUTH_CREDENTIALS`,
   `GOOGLE_OAUTH_TOKEN`). `client_secret.json` / `token.json` are **git-ignored — never commit**.
-- OAuth client must be **Desktop app** type. Scopes in `constants.ts`; changing them needs re-login
+- OAuth client must be **Desktop app** type. Scopes in `config/constants.ts`; changing them needs re-login
   (delete old token first). External+Testing consent expires refresh tokens after 7 days — prefer
   **Internal** for Workspace orgs.
 - Never log tokens/secrets to **stdout** (JSON-RPC channel) — use **stderr**.

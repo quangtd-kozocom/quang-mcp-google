@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 
 const clientId = process.env.KOZOCOM_GOOGLE_OAUTH_CLIENT_ID;
 const clientSecret = process.env.KOZOCOM_GOOGLE_OAUTH_CLIENT_SECRET;
-const outputPath = join("dist", "generated", "oauth-client.js");
+const outputPath = join("dist", "google", "generated", "oauth-client.js");
 
 if (!clientId && !clientSecret) {
   console.error("No embedded OAuth client configured.");

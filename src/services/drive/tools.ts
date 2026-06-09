@@ -1,7 +1,6 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { drive_v3 } from "googleapis";
-import { DriveFileAdapter } from "../drive-adapter.js";
+import { DriveFileAdapter } from "./adapter.js";
 import {
   errorResult,
   formatResponse,
@@ -9,8 +8,8 @@ import {
   type ResponseFormatValue,
   type ToolResult,
   toolResult,
-} from "../format.js";
-import { type ArgsOf, driveTool, registerAll, type ToolRegistration } from "./define.js";
+} from "../../core/result.js";
+import { type ArgsOf, driveTool, type ToolRegistration } from "../../core/tool.js";
 
 // ── Markdown rendering ────────────────────────────────────────────────────────
 
@@ -386,7 +385,3 @@ export const driveTools: readonly ToolRegistration[] = [
   copyFileTool,
   deleteFileTool,
 ];
-
-export function registerDriveTools(server: McpServer): void {
-  registerAll(server, driveTools);
-}

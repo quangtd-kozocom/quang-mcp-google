@@ -1,8 +1,8 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { authTools } from "./auth.js";
-import { isReadOnlyTool, registerAll, type ToolRegistration } from "./define.js";
-import { driveTools } from "./drive.js";
-import { sheetsTools } from "./sheets.js";
+import { authTools } from "./auth/tools.js";
+import { isReadOnlyTool, registerAll, type ToolRegistration } from "../core/tool.js";
+import { driveTools } from "./drive/tools.js";
+import { sheetsTools } from "./sheets/tools.js";
 
 /** Every Google tool exposed by this server, in registration order. */
 export const googleTools: readonly ToolRegistration[] = [...authTools, ...driveTools, ...sheetsTools];

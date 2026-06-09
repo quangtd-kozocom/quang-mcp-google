@@ -2,8 +2,8 @@ import type { McpServer, ToolCallback } from "@modelcontextprotocol/sdk/server/m
 import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
 import type { z } from "zod";
 import type { drive_v3, sheets_v4 } from "googleapis";
-import { errorResult, handleGoogleError, type ToolResult } from "../format.js";
-import { getGoogleClients } from "../google.js";
+import { errorResult, handleGoogleError, type ToolResult } from "./result.js";
+import { getGoogleClients } from "../google/client.js";
 
 /**
  * Args a handler receives: the parsed output of its Zod input shape, with

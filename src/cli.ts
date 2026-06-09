@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import { Command, Option } from "commander";
-import { clearToken, getAuthStatus, runLoginFlow } from "./auth.js";
-import { SERVER_VERSION, TOKEN_PATH } from "./constants.js";
+import { clearToken, getAuthStatus, runLoginFlow } from "./google/auth.js";
+import { SERVER_VERSION, TOKEN_PATH } from "./config/constants.js";
 import { startServer } from "./index.js";
-import { type ClientName, configReport, parseClient, runSetup } from "./setup.js";
+import { type ClientName, configReport, parseClient, runSetup } from "./setup/setup.js";
 
 const CLIENT_CHOICES = ["codex", "claude", "copilot", "all"] as const;
 

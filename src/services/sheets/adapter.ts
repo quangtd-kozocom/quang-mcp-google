@@ -46,7 +46,7 @@ export interface BatchWriteResult {
 /**
  * Anti-corruption layer over the Sheets v4 API: every Google call lives here so
  * tool handlers deal in plain, intention-revealing shapes. Mirrors
- * {@link ../drive-adapter.DriveFileAdapter} so both services read the same way.
+ * {@link ../drive/adapter.DriveFileAdapter} so both services read the same way.
  */
 export class SheetsAdapter {
   constructor(private readonly sheets: sheets_v4.Sheets) {}

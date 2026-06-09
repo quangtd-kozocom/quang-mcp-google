@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { sheets_v4 } from "googleapis";
 
-vi.mock("../google.js", () => ({ getGoogleClients: vi.fn() }));
+vi.mock("../../google/client.js", () => ({ getGoogleClients: vi.fn() }));
 
 import {
   sheetsAddSheet,
@@ -17,7 +17,7 @@ import {
   sheetsSetDataValidation,
   sheetsWriteRange,
   sheetsWriteRanges,
-} from "./sheets.js";
+} from "./tools.js";
 
 function fakeSheets() {
   return {

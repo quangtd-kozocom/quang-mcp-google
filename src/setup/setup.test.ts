@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { configReport, mcpConfigSnippet, parseClient } from "./setup.js";
-import { DANGEROUS_TOOL_NAMES, READ_ONLY_TOOL_NAMES } from "./tools/google.js";
+import { DANGEROUS_TOOL_NAMES, READ_ONLY_TOOL_NAMES } from "../services/registry.js";
 
 describe("parseClient", () => {
   it("accepts known clients", () => {

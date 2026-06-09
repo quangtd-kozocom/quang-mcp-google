@@ -35,7 +35,7 @@ export const CHARACTER_LIMIT = 25000;
  * destructive tools (delete/clear) are not registered. The `config` CLI command
  * emits this in the generated MCP config so AI clients can't destroy data.
  */
-export const SAFE_MODE_ENV = "KOZOCOM_MCP_SAFE_MODE";
+const SAFE_MODE_ENV = "KOZOCOM_MCP_SAFE_MODE";
 
 /** Whether this process is running with dangerous tools disabled. */
 export const SAFE_MODE = process.env[SAFE_MODE_ENV] === "1";

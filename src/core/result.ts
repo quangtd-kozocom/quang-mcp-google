@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { CHARACTER_LIMIT } from "./constants.js";
+import { CHARACTER_LIMIT } from "../config/constants.js";
 
 /** Output format shared by all read tools. */
-export const ResponseFormat = {
+const ResponseFormat = {
   MARKDOWN: "markdown",
   JSON: "json",
 } as const;

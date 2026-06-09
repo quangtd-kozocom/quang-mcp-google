@@ -1,10 +1,10 @@
 import { access, mkdir, readFile, stat } from "node:fs/promises";
 import { createInterface } from "node:readline/promises";
 import { stdin as input, stderr as output } from "node:process";
-import { CLIENT_SECRET_PATH, CONFIG_DIR } from "./constants.js";
-import { getAuthStatus } from "./auth.js";
-import { EMBEDDED_OAUTH_CLIENT } from "./generated/oauth-client.js";
-import { DANGEROUS_TOOL_NAMES, READ_ONLY_TOOL_NAMES } from "./tools/google.js";
+import { CLIENT_SECRET_PATH, CONFIG_DIR } from "../config/constants.js";
+import { getAuthStatus } from "../google/auth.js";
+import { EMBEDDED_OAUTH_CLIENT } from "../google/generated/oauth-client.js";
+import { DANGEROUS_TOOL_NAMES, READ_ONLY_TOOL_NAMES } from "../services/registry.js";
 
 const SERVER_KEY = "kozocom-google";
 

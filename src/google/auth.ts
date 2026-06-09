@@ -3,8 +3,8 @@ import type { AddressInfo } from "node:net";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import open from "open";
 import { google } from "googleapis";
-import { CLIENT_SECRET_PATH, CONFIG_DIR, SCOPES, TOKEN_PATH } from "./constants.js";
-import { NotAuthenticatedError } from "./format.js";
+import { CLIENT_SECRET_PATH, CONFIG_DIR, SCOPES, TOKEN_PATH } from "../config/constants.js";
+import { NotAuthenticatedError } from "../core/result.js";
 import { EMBEDDED_OAUTH_CLIENT } from "./generated/oauth-client.js";
 
 export type OAuth2Client = InstanceType<typeof google.auth.OAuth2>;

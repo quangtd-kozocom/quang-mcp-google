@@ -1,7 +1,6 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { getAuthStatus } from "../auth.js";
-import { toolResult } from "../format.js";
-import { registerAll, tool, type ToolRegistration } from "./define.js";
+import { getAuthStatus } from "../../google/auth.js";
+import { toolResult } from "../../core/result.js";
+import { tool, type ToolRegistration } from "../../core/tool.js";
 
 const authStatusTool = tool({
   name: "google_auth_status",
@@ -34,7 +33,3 @@ Returns:
 });
 
 export const authTools: readonly ToolRegistration[] = [authStatusTool];
-
-export function registerAuthTools(server: McpServer): void {
-  registerAll(server, authTools);
-}
