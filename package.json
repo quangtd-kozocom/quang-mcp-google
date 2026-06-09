@@ -4,6 +4,9 @@
   "description": "Kozocom MCP server",
   "type": "module",
   "packageManager": "pnpm@11.5.2",
+  "engines": {
+    "node": ">=22.5.0"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/quangtd-kozocom/terra-mcp-google.git"
@@ -20,9 +23,13 @@
     "scripts/install.sh"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && node scripts/embed-oauth-client.mjs",
+    "build": "tsc -p tsconfig.build.json && node scripts/embed-oauth-client.mjs && node scripts/copy-admin.mjs",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/cli.js",
+    "admin": "node dist/cli.js admin",
+    "admin:dev": "tsx src/cli.ts admin",
+    "admin:build": "pnpm -C admin install && pnpm -C admin build",
+    "admin:ui:dev": "pnpm -C admin dev",
     "login": "node dist/cli.js auth login",
     "logout": "node dist/cli.js auth logout",
     "auth:status": "node dist/cli.js auth status",

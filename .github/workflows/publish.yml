@@ -26,7 +26,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           registry-url: https://registry.npmjs.org
           cache: pnpm
 
@@ -44,6 +44,9 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+      - name: Build the admin web console
+        run: pnpm admin:build
 
       - name: Build with embedded OAuth client id
         run: pnpm build

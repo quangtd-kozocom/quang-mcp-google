@@ -41,8 +41,24 @@ Organized as **feature modules**: shared kernel (`config`, `core`), Google integ
   - `auth/tools.ts` — `google_auth_status`
   - `drive/` — `adapter.ts` (anti-corruption layer) + `tools.ts` (handlers + registrations)
   - `sheets/` — `adapter.ts` + `tools.ts`
+- `policy/` — the **permission gate** (per-resource allowlist), service-agnostic:
+  - `store.ts` — `PolicyStore` repository over **`node:sqlite`** (`grants` + `settings`); `:memory:` in tests
+  - `engine.ts` — `PolicyEngine` decision logic per mode (`off`/`read_open`/`strict`)
+  - `resolver.ts` — `DriveAncestorResolver` so a folder grant cascades to its children
+  - `guard.ts` — `guardedRun` (wraps each tool's `run` via `core/tool.ts`) + `filterVisibleFiles`; `setPolicyStore` is the test seam
+- `admin/` — `server.ts` (`node:http`: serves `routeApi` + the built SPA) for `terra-mcp admin`; `api.ts` is the pure, testable router. SPA source is in the top-level `admin/` dir (standalone deps, built → `dist/admin/ui`)
 - `setup/setup.ts` — `runSetup()`, MCP config snippets per client
-- `**/*.test.ts` — colocated vitest tests
+- `**/*.test.ts` — colocated vitest tests (global `vitest.setup.ts` injects an in-memory `PolicyStore`)
+
+## Permission gate
+
+A second, finer layer under safe mode: each tool carries a declarative `ToolPolicy`
+(`{ action, kind, idArg?, parentArg?, sourceArg?, newResourceId? }`); `guardedRun` maps args → a
+`PolicyEngine.check` against the SQLite allowlist **before** the call, and auto-grants created
+resources **after**. `read_open` (default) lets the agent read/create freely but gates write/delete
+of existing resources; `strict` confines everything (incl. list/search via `filterVisibleFiles`) to
+the allowlist; `off` disables the gate. Grants are managed in the `terra-mcp admin` web console.
+Needs **Node 23.4+** for `node:sqlite`; on older Node the gate self-disables (server still runs).
 
 ## CLI & safe mode
 

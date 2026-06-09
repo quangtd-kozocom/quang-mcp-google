@@ -13,6 +13,12 @@
       "skillPath": "fallow/skills/fallow/SKILL.md",
       "computedHash": "a956a2af36b65e0c42efa453ec0bc4b55f063534dc43991784075866b42d9a10"
     },
+    "frontend-design": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-design/SKILL.md",
+      "computedHash": "063a0e6448123cd359ad0044cc46b0e490cc7964d45ef4bb9fd842bd2ffbca67"
+    },
     "grill-me": {
       "source": "mattpocock/skills",
       "sourceType": "github",
@@ -30,6 +36,12 @@
       "sourceType": "github",
       "skillPath": "skills/mcp-builder/SKILL.md",
       "computedHash": "826e46adf81e1372282e205c34e1a2ee876e72148007726e4a2512599d2fef7b"
+    },
+    "react-doctor": {
+      "source": "aidenybai/react-doctor",
+      "sourceType": "github",
+      "skillPath": "skills/react-doctor/SKILL.md",
+      "computedHash": "1acf87cf2ed6dc3e300796ac80c9421e0783b16cb301b67abba9b5224f594cf1"
     },
     "to-issues": {
       "source": "mattpocock/skills",

@@ -10,6 +10,15 @@ import {
 } from "../../core/result.js";
 import { type ArgsOf, sheetsTool, type ToolRegistration } from "../../core/tool.js";
 
+// A newly created spreadsheet is returned under these structuredContent fields;
+// the guard reads them to auto-grant the spreadsheet after a successful create.
+function createdSpreadsheetId(structured: Record<string, unknown>): string | undefined {
+  return typeof structured.spreadsheet_id === "string" ? structured.spreadsheet_id : undefined;
+}
+function createdSpreadsheetName(structured: Record<string, unknown>): string | undefined {
+  return typeof structured.title === "string" ? structured.title : undefined;
+}
+
 // ── Shared schema fragments & rendering ───────────────────────────────────────
 
 const cellSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
@@ -115,6 +124,12 @@ Args:
 Returns: { spreadsheet_id, title, url, sheets:[{sheetId,title}] }`,
   inputSchema: createSpreadsheetInput,
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  policy: {
+    action: "create",
+    kind: "spreadsheet",
+    newResourceId: createdSpreadsheetId,
+    newResourceName: createdSpreadsheetName,
+  },
   run: sheetsCreateSpreadsheet,
 });
 
@@ -157,6 +172,7 @@ Args:
 Returns: { spreadsheet_id, title, url, sheets:[{sheetId,title,index,rows,columns}] }`,
   inputSchema: getSpreadsheetInput,
   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+  policy: { action: "read", kind: "spreadsheet", idArg: "spreadsheet_id" },
   run: sheetsGetSpreadsheet,
 });
 
@@ -218,6 +234,7 @@ Returns: a single range → { range, row_count, values: CellValue[][] };
 an array of ranges → { count, ranges: [{ range, row_count, values }] }`,
   inputSchema: readRangeInput,
   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+  policy: { action: "read", kind: "spreadsheet", idArg: "spreadsheet_id" },
   run: sheetsReadRange,
 });
 
@@ -304,6 +321,7 @@ multi-range write → { total_updated_rows, total_updated_columns, total_updated
   ranges:[{updated_range, updated_rows, updated_columns, updated_cells}] }`,
   inputSchema: writeRangeInput,
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+  policy: { action: "write", kind: "spreadsheet", idArg: "spreadsheet_id" },
   run: sheetsWriteRange,
 });
 
@@ -355,6 +373,7 @@ Args:
 Returns: { table_range, updated_range, updated_rows, updated_cells }`,
   inputSchema: appendRowsInput,
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  policy: { action: "write", kind: "spreadsheet", idArg: "spreadsheet_id" },
   run: sheetsAppendRows,
 });
 
@@ -386,6 +405,7 @@ Args:
 Returns: { cleared_range }`,
   inputSchema: clearRangeInput,
   annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+  policy: { action: "write", kind: "spreadsheet", idArg: "spreadsheet_id" },
   run: sheetsClearRange,
 });
 
@@ -426,6 +446,7 @@ Args:
 Returns: { sheet_id, title }`,
   inputSchema: addSheetInput,
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  policy: { action: "write", kind: "spreadsheet", idArg: "spreadsheet_id" },
   run: sheetsAddSheet,
 });
 
@@ -457,6 +478,7 @@ Args:
 Returns: { sheet_id }`,
   inputSchema: deleteSheetInput,
   annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+  policy: { action: "write", kind: "spreadsheet", idArg: "spreadsheet_id" },
   run: sheetsDeleteSheet,
 });
 
@@ -536,6 +558,7 @@ use sheets_batch_update.
 Returns: { applied, fields }`,
   inputSchema: formatCellsInput,
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+  policy: { action: "write", kind: "spreadsheet", idArg: "spreadsheet_id" },
   run: sheetsFormatCells,
 });
 
@@ -581,6 +604,7 @@ For other validation rules (number/date/custom-formula conditions), use sheets_b
 Returns: { values }`,
   inputSchema: setDataValidationInput,
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+  policy: { action: "write", kind: "spreadsheet", idArg: "spreadsheet_id" },
   run: sheetsSetDataValidation,
 });
 
@@ -625,6 +649,7 @@ Args:
 Returns: { reply_count, replies: [...] }`,
   inputSchema: batchUpdateInput,
   annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
+  policy: { action: "write", kind: "spreadsheet", idArg: "spreadsheet_id" },
   run: sheetsBatchUpdate,
 });
 

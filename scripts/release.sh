@@ -21,6 +21,7 @@ pnpm install --frozen-lockfile
 pnpm typecheck
 pnpm lint
 pnpm test
+pnpm admin:build
 pnpm build
 
 # Bump version (no git tag yet — we tag with a leading 'v' ourselves).

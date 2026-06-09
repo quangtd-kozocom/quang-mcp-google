@@ -18,6 +18,7 @@ terra-mcp client codex        # print safe (read-only) MCP config
 | `auth login` / `logout` / `status` | sign in / out / show account, scopes, expiry |
 | `setup` | check config dir + auth, print MCP config for all clients |
 | `client [codex\|claude\|copilot\|kiro\|all]` | print MCP config with **mutating tools disabled** (`--include-dangerous` keeps them) |
+| `admin` | open the web console to manage which resources the agent may access (`-p` port, `--no-open`) |
 | *(no command)* | start the stdio server |
 
 ## Configuration
@@ -31,12 +32,42 @@ Set these in your MCP client's `env` block (or the launching shell):
 | `GOOGLE_OAUTH_TOKEN` | `<TERRA_MCP_DIR>/token.json` | Cached access/refresh token |
 | `TERRA_MCP_SAFE_MODE` | unset | `1` → register **only read-only tools**; drop every mutating tool |
 | `TERRA_MCP_LOCAL_FILE_ROOT` | unset | Only directory `local_path`/`save_path` may touch. Unset = local file up/download disabled |
+| `TERRA_MCP_POLICY_DB` | `<TERRA_MCP_DIR>/policy.db` | SQLite database holding the resource allowlist + policy mode |
+| `TERRA_MCP_POLICY_MODE` | `read_open` | Initial mode before one is chosen in the console: `off` \| `read_open` \| `strict` |
+| `TERRA_MCP_ADMIN_PORT` | `4717` | Port the `admin` web console listens on |
 | `TERRA_MCP_TOKEN_PROXY_URL` | bundled proxy | OAuth token-exchange proxy (advanced; only when self-hosting it) |
 | `TERRA_MCP_PROXY_KEY` | bundled key | Deterrent key sent to the proxy (ships in the package — not a secret) |
 
 **Restricting tools.** Disable the mutating tools server-side with `TERRA_MCP_SAFE_MODE=1`, or
 per-client with `terra-mcp client <agent>` (pass `--include-dangerous` to keep them on). Tools are
 also gated by the **OAuth scopes granted at login** — a Sheets-only grant exposes no `drive_*` tools.
+
+## Permission gate (per-resource allowlist)
+
+Beyond on/off tool gating, the server enforces a **per-resource allowlist**: you decide exactly
+which Drive files/folders and Sheets the agent may touch, and with what power (read / write / delete).
+Every tool call is checked against the allowlist (stored in a small local SQLite database) before it
+runs; created resources are auto-added so the agent can keep working with what it just made.
+
+```bash
+terra-mcp admin        # opens the web console at http://localhost:4717
+```
+
+**Three modes** (switch any time in the console):
+
+| Mode | The agent can… |
+| --- | --- |
+| `off` | …do anything your account can (gate disabled). |
+| `read_open` *(default)* | …**read** anything and **create** new resources, but only **write/delete existing** resources you've granted. Useful out of the box — nothing to configure to start reading. |
+| `strict` | …only **see and use** resources in the allowlist (and inside granted folders). Everything else is invisible, even to list/search. |
+
+**Grants** carry independent read / write / delete flags (new grants default to read-only — the safe
+starting point), and a grant on a **folder cascades** to everything inside it. Manage them — search
+your Drive to pick a file, or paste an ID — in the `admin` console. The console and the running
+server share the same database, so changes take effect on the agent's next call; no restart needed.
+
+> Requires **Node 23.4+** (or Node 22.5+ launched with `--experimental-sqlite`) for the gate. On
+> older Node the server still runs, with the gate disabled.
 
 ## Tools
 

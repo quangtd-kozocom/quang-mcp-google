@@ -1,0 +1,4 @@
+# Standalone project: this file stops pnpm from walking up into the root
+# terra-mcp workspace, so `admin` installs and builds entirely on its own.
+allowBuilds:
+  esbuild: true

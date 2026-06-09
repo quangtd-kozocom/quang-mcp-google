@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 import { Command, Option } from "commander";
+import open from "open";
 import { clearToken, getAuthStatus, runLoginFlow } from "./google/auth.js";
 import { SERVER_VERSION, TOKEN_PATH } from "./config/constants.js";
 import { startServer } from "./index.js";
+import { startAdminServer } from "./admin/server.js";
 import { type ClientName, configReport, parseClient, runSetup } from "./setup/setup.js";
 
 const CLIENT_CHOICES = ["codex", "claude", "copilot", "kiro", "all"] as const;
@@ -92,6 +94,19 @@ function buildProgram(): Command {
     .action((agent: string | undefined, opts: { includeDangerous: boolean }) => {
       const client = parseClient(agent) ?? "all";
       console.log(configReport({ client, safeMode: !opts.includeDangerous }));
+    });
+
+  program
+    .command("admin")
+    .description("Open the web console to manage which resources the agent may access")
+    .option("-p, --port <port>", "Port to listen on")
+    .option("--no-open", "Do not open a browser automatically")
+    .action(async (opts: { port?: string; open: boolean }) => {
+      const port = opts.port ? Number(opts.port) : undefined;
+      const { url } = await startAdminServer({ port });
+      console.error(`terra-mcp admin console running at ${url}`);
+      console.error("Manage the resource allowlist and policy mode here. Press Ctrl+C to stop.");
+      if (opts.open) await open(url).catch(() => undefined);
     });
 
   return program;

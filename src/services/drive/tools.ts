@@ -10,6 +10,7 @@ import {
   toolResult,
 } from "../../core/result.js";
 import { type ArgsOf, driveTool, type ToolRegistration } from "../../core/tool.js";
+import { filterVisibleFiles } from "../../policy/guard.js";
 
 // ── Markdown rendering ────────────────────────────────────────────────────────
 
@@ -38,6 +39,20 @@ function renderFiles(
   });
 }
 
+// ── Policy helpers ────────────────────────────────────────────────────────────
+// A created Drive file is returned under `structuredContent.file`; these pull
+// its id/name so the guard can auto-grant it after a successful create.
+
+function createdFileId(structured: Record<string, unknown>): string | undefined {
+  const file = structured.file as { id?: unknown } | undefined;
+  return typeof file?.id === "string" ? file.id : undefined;
+}
+
+function createdFileName(structured: Record<string, unknown>): string | undefined {
+  const file = structured.file as { name?: unknown } | undefined;
+  return typeof file?.name === "string" ? file.name : undefined;
+}
+
 // ── Tools ─────────────────────────────────────────────────────────────────────
 // Each tool: input schema → exported pure handler (unit-tested directly) →
 // registration. The handler's arg type derives from the schema, so the schema
@@ -63,12 +78,15 @@ export async function driveListFiles(
     orderBy: args.order_by,
     includeTrashed: args.include_trashed,
   });
+  // In strict mode this drops files outside the allowlist so search can't leak
+  // resources the agent isn't permitted to see; otherwise it returns them all.
+  const files = await filterVisibleFiles(result.files);
   const output = {
-    count: result.files.length,
-    files: result.files,
+    count: files.length,
+    files,
     next_page_token: result.nextPageToken,
   };
-  const text = renderFiles(result.files, args.response_format, `Drive files (${result.files.length})`, {
+  const text = renderFiles(files, args.response_format, `Drive files (${files.length})`, {
     next_page_token: result.nextPageToken,
   });
   return toolResult(text, output);
@@ -96,6 +114,7 @@ Args:
 Returns: { count, files:[{id,name,mimeType,modifiedTime,size,parents,webViewLink,owners}], next_page_token }`,
   inputSchema: listFilesInput,
   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+  policy: { action: "list", kind: "file" },
   run: driveListFiles,
 });
 
@@ -125,6 +144,7 @@ Args:
 Returns: { file: {id,name,mimeType,size,modifiedTime,parents,owners,webViewLink,...} }`,
   inputSchema: getFileInput,
   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+  policy: { action: "read", kind: "file", idArg: "file_id" },
   run: driveGetFile,
 });
 
@@ -182,6 +202,7 @@ Args:
 Returns (text content inline) or { file_id, saved_to, bytes, mime_type } when saved to disk.`,
   inputSchema: downloadFileInput,
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+  policy: { action: "read", kind: "file", idArg: "file_id" },
   run: driveDownloadFile,
 });
 
@@ -213,6 +234,13 @@ Args:
 Returns: { file: {id, name, ...} }`,
   inputSchema: createFolderInput,
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  policy: {
+    action: "create",
+    kind: "folder",
+    parentArg: "parent_id",
+    newResourceId: createdFileId,
+    newResourceName: createdFileName,
+  },
   run: driveCreateFolder,
 });
 
@@ -256,6 +284,13 @@ Args:
 Provide exactly one of content/local_path. Returns: { file: {id, name, ...} }`,
   inputSchema: uploadFileInput,
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  policy: {
+    action: "create",
+    kind: "file",
+    parentArg: "parent_id",
+    newResourceId: createdFileId,
+    newResourceName: createdFileName,
+  },
   run: driveUploadFile,
 });
 
@@ -299,6 +334,7 @@ Args:
 Returns: { file: {id, name, ...} }`,
   inputSchema: updateFileInput,
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+  policy: { action: "write", kind: "file", idArg: "file_id" },
   run: driveUpdateFile,
 });
 
@@ -333,6 +369,14 @@ Args:
 Returns: { file: {id, name, ...} } of the new copy`,
   inputSchema: copyFileInput,
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+  policy: {
+    action: "create",
+    kind: "file",
+    parentArg: "parent_id",
+    sourceArg: "file_id",
+    newResourceId: createdFileId,
+    newResourceName: createdFileName,
+  },
   run: driveCopyFile,
 });
 
@@ -373,6 +417,7 @@ Args:
 Returns: { file_id, permanent, trashed? }`,
   inputSchema: deleteFileInput,
   annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: true },
+  policy: { action: "delete", kind: "file", idArg: "file_id" },
   run: driveDeleteFile,
 });
 

@@ -42,6 +42,14 @@ export const ENV = {
   SAFE_MODE: "TERRA_MCP_SAFE_MODE",
   /** The only directory `local_path`/`save_path` may read/write. */
   LOCAL_FILE_ROOT: "TERRA_MCP_LOCAL_FILE_ROOT",
+  /** Path to the SQLite policy/allowlist database. */
+  POLICY_DB: "TERRA_MCP_POLICY_DB",
+  /** Initial policy mode used when the database has none stored yet. */
+  POLICY_MODE: "TERRA_MCP_POLICY_MODE",
+  /** Port the `terra-mcp admin` web console listens on. */
+  ADMIN_PORT: "TERRA_MCP_ADMIN_PORT",
+  /** Directory holding the built admin SPA assets (overrides auto-detection). */
+  ADMIN_STATIC_DIR: "TERRA_MCP_ADMIN_STATIC_DIR",
 } as const;
 
 /** Directory holding the optional OAuth client config and cached token. */
@@ -87,6 +95,29 @@ export const PROXY_SHARED_KEY =
 
 /** Maximum characters returned in a single tool response before truncation. */
 export const CHARACTER_LIMIT = 25000;
+
+/**
+ * Path to the SQLite database holding the resource allowlist (grants) and the
+ * policy mode. Lives beside the cached token under {@link CONFIG_DIR}. Both the
+ * MCP server and the `admin` web console open this same file (SQLite WAL makes
+ * the two processes safe), so a grant added in the UI is seen by the server on
+ * its next tool call — no restart, no cache to invalidate.
+ */
+export const POLICY_DB_PATH = process.env[ENV.POLICY_DB] ?? join(CONFIG_DIR, "policy.db");
+
+/**
+ * The policy mode used the first time the database is created (before the user
+ * has chosen one in the admin console). `read_open` is the friendly default:
+ * the agent may read anything the account can, but may only write/delete/create
+ * where the user has granted access. See `PolicyMode` for the full meaning.
+ */
+export const DEFAULT_POLICY_MODE = process.env[ENV.POLICY_MODE] ?? "read_open";
+
+/** Port the `terra-mcp admin` web console listens on (default 4717). */
+export const ADMIN_PORT = Number(process.env[ENV.ADMIN_PORT] ?? 4717);
+
+/** Explicit override for the built admin SPA directory, when set. Lazy. */
+export const getAdminStaticDir = (): string | undefined => process.env[ENV.ADMIN_STATIC_DIR];
 
 /**
  * Whether this process runs in safe mode (dangerous tools not registered). The

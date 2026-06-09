@@ -4,6 +4,8 @@ import type { z } from "zod";
 import type { drive_v3, sheets_v4 } from "googleapis";
 import { errorResult, handleGoogleError, type ToolResult } from "./result.js";
 import { getGoogleClients } from "../google/client.js";
+import { guardedRun } from "../policy/guard.js";
+import type { ToolPolicy } from "../policy/types.js";
 
 /**
  * Args a handler receives: the parsed output of its Zod input shape, with
@@ -24,6 +26,8 @@ export interface ToolRegistration {
   (server: McpServer): void;
   readonly toolName: string;
   readonly annotations: ToolAnnotations;
+  /** Permission-gate descriptor, if this tool touches a Google resource. */
+  readonly policy?: ToolPolicy;
 }
 
 /**
@@ -42,17 +46,25 @@ interface ToolSpec<Shape extends z.ZodRawShape> {
   description: string;
   inputSchema: Shape;
   annotations: ToolAnnotations;
+  /** Permission-gate descriptor; omit for tools that touch no Google resource. */
+  policy?: ToolPolicy;
 }
 
-/** Register a tool whose handler is `run`, mapping any thrown error to a result. */
+/**
+ * Register a tool whose handler is `run`. The handler is wrapped twice: the
+ * permission gate ({@link guardedRun}) decides whether the call may proceed and
+ * auto-grants created resources, and the outer try/catch maps any thrown error
+ * to an actionable result. Both wrappers are applied here, once, so every tool
+ * is gated and error-safe without per-handler boilerplate.
+ */
 function register<Shape extends z.ZodRawShape>(
   spec: ToolSpec<Shape>,
   run: (args: ArgsOf<Shape>) => Promise<ToolResult>,
 ): ToolRegistration {
-  const { name, title, description, inputSchema, annotations } = spec;
+  const { name, title, description, inputSchema, annotations, policy } = spec;
   const callback = async (args: ArgsOf<Shape>): Promise<ToolResult> => {
     try {
-      return await run(args);
+      return await guardedRun(policy, args as Record<string, unknown>, () => run(args));
     } catch (error) {
       return errorResult(handleGoogleError(error));
     }
@@ -68,7 +80,7 @@ function register<Shape extends z.ZodRawShape>(
       callback as unknown as ToolCallback<Shape>,
     );
   };
-  return Object.assign(registration, { toolName: name, annotations });
+  return Object.assign(registration, { toolName: name, annotations, policy });
 }
 
 /**
