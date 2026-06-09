@@ -1,6 +1,6 @@
 {
   "name": "terra-mcp-google",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "Kozocom MCP server",
   "type": "module",
   "packageManager": "pnpm@11.5.2",
