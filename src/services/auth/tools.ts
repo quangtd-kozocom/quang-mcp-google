@@ -22,7 +22,7 @@ Returns:
     const status = await getAuthStatus();
     const text = status.authenticated
       ? `Authenticated${status.email ? ` as ${status.email}` : ""}.`
-      : "Not authenticated. Run `kozocom-mcp auth login` in a terminal to sign in.";
+      : "Not authenticated. Run `quang-mcp auth login` in a terminal to sign in.";
     return toolResult(text, {
       authenticated: status.authenticated,
       email: status.email ?? null,

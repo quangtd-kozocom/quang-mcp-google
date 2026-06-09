@@ -129,7 +129,7 @@ function kiroSnippet(command: string, args: string[], credentialsPath: string | 
 export function mcpConfigSnippet({
   client,
   command = "npx",
-  args = ["-y", "-p", PACKAGE_NAME, "kozocom-mcp"],
+  args = ["-y", "-p", PACKAGE_NAME, "quang-mcp"],
   credentialsPath = null,
   safeMode = false,
 }: McpSnippetOptions): string {
@@ -230,7 +230,7 @@ export async function runSetup(options: SetupOptions = {}): Promise<void> {
   if (status.authenticated) {
     console.error(`Google auth: signed in${status.email ? ` as ${status.email}` : ""}.`);
   } else {
-    console.error("Google auth: not signed in. Run `kozocom-mcp auth login` to sign in.");
+    console.error("Google auth: not signed in. Run `quang-mcp auth login` to sign in.");
   }
 
   const client = options.client ?? (await chooseClient("all", options.yes ?? false));

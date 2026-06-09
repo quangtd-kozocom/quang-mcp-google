@@ -28,7 +28,7 @@ async function logout(): Promise<void> {
 async function status(): Promise<void> {
   const result = await getAuthStatus();
   if (!result.authenticated) {
-    console.error("Not signed in. Run `kozocom-mcp auth login` to sign in.");
+    console.error("Not signed in. Run `quang-mcp auth login` to sign in.");
     return;
   }
   console.error(`Signed in${result.email ? ` as ${result.email}` : ""}.`);
@@ -40,11 +40,11 @@ function buildProgram(): Command {
   const program = new Command();
 
   program
-    .name("kozocom-mcp")
+    .name("quang-mcp")
     .description("Kozocom Google Drive & Sheets MCP server")
     .version(SERVER_VERSION);
 
-  // Default action (`kozocom-mcp` with no subcommand) starts the server.
+  // Default action (`quang-mcp` with no subcommand) starts the server.
   program
     .command("start", { isDefault: true })
     .alias("server")

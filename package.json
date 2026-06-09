@@ -12,8 +12,8 @@
     "access": "public"
   },
   "bin": {
-    "kozocom-mcp": "dist/cli.js",
-    "kozocom-mcp-server": "dist/index.js"
+    "quang-mcp": "dist/cli.js",
+    "quang-mcp-server": "dist/index.js"
   },
   "files": [
     "dist",

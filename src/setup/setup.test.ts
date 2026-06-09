@@ -24,7 +24,7 @@ describe("mcpConfigSnippet", () => {
         client: "codex",
         credentialsPath: "/tmp/client_secret.json",
       }),
-    ).toContain('args = ["-y","-p","quang-mcp-google","kozocom-mcp"]');
+    ).toContain('args = ["-y","-p","quang-mcp-google","quang-mcp"]');
   });
 
   it("builds VS Code Copilot JSON", () => {
@@ -38,7 +38,7 @@ describe("mcpConfigSnippet", () => {
         "kozocom-google": {
           type: "stdio",
           command: "npx",
-          args: ["-y", "-p", "quang-mcp-google", "kozocom-mcp"],
+          args: ["-y", "-p", "quang-mcp-google", "quang-mcp"],
           env: { GOOGLE_OAUTH_CREDENTIALS: "/tmp/client_secret.json" },
         },
       },
@@ -81,7 +81,7 @@ describe("mcpConfigSnippet", () => {
     const json = JSON.parse(snippet.split("\n\n")[1] ?? "");
     expect(json.mcpServers["kozocom-google"]).toEqual({
       command: "npx",
-      args: ["-y", "-p", "quang-mcp-google", "kozocom-mcp"],
+      args: ["-y", "-p", "quang-mcp-google", "quang-mcp"],
       env: { GOOGLE_OAUTH_CREDENTIALS: "/tmp/cs.json" },
       disabled: false,
       autoApprove: [],

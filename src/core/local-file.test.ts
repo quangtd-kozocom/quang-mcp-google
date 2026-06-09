@@ -21,7 +21,7 @@ describe("isPathInsideRoot", () => {
   });
 
   it("rejects existing write targets that resolve outside the root", async () => {
-    vi.stubEnv("KOZOCOM_MCP_LOCAL_FILE_ROOT", "/safe/root");
+    vi.stubEnv("QUANG_MCP_LOCAL_FILE_ROOT", "/safe/root");
     vi.resetModules();
     vi.doMock("node:fs/promises", () => ({
       realpath: vi.fn(async (path: string) => {
@@ -31,6 +31,6 @@ describe("isPathInsideRoot", () => {
       }),
     }));
     const { safeWritePath } = await import("./local-file.js");
-    await expect(safeWritePath("link")).rejects.toThrow("outside KOZOCOM_MCP_LOCAL_FILE_ROOT");
+    await expect(safeWritePath("link")).rejects.toThrow("outside QUANG_MCP_LOCAL_FILE_ROOT");
   });
 });

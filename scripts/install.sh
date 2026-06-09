@@ -13,4 +13,4 @@ npm install -g "${PACKAGE_SPEC}"
 
 echo >&2
 echo "Running setup..." >&2
-kozocom-mcp setup "$@"
+quang-mcp setup "$@"

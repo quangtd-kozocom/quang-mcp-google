@@ -1,4 +1,4 @@
-# kozocom-mcp — Google Drive + Sheets MCP server
+# quang-mcp — Google Drive + Sheets MCP server
 
 Read/write access to your **Google Drive** and **Sheets**. OAuth + PKCE login — only the public
 client ID ships in npm, consent happens in browser, token is cached and auto-refreshed.
@@ -7,8 +7,8 @@ client ID ships in npm, consent happens in browser, token is cached and auto-ref
 
 ```bash
 npm install -g quang-mcp-google
-kozocom-mcp auth login          # browser consent, caches token
-kozocom-mcp client codex        # print safe (read-only) MCP config
+quang-mcp auth login          # browser consent, caches token
+quang-mcp client codex        # print safe (read-only) MCP config
 ```
 
 ## CLI
@@ -22,11 +22,7 @@ kozocom-mcp client codex        # print safe (read-only) MCP config
 
 ## Tools
 
-Local file reads/writes are disabled by default. To use `drive_upload_file.local_path` or
-`drive_download_file.save_path`, set `KOZOCOM_MCP_LOCAL_FILE_ROOT` to an allowlisted directory;
-relative paths resolve inside that directory, and symlink escapes are rejected.
-
-**Auth** — sign-in/out are CLI-only (`kozocom-mcp auth login`/`logout`).
+**Auth** — sign-in/out are CLI-only (`quang-mcp auth login`/`logout`).
 
 | Tool | Does |
 | --- | --- |

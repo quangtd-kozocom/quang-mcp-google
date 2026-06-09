@@ -4,7 +4,7 @@ Guidance for AI agents in this repo.
 
 ## What this is
 
-`kozocom-mcp`: MCP server exposing **Google Drive + Sheets** over stdio. Auth = **OAuth user login**
+`quang-mcp`: MCP server exposing **Google Drive + Sheets** over stdio. Auth = **OAuth user login**
 (browser consent, cached + auto-refreshed token), not a service account.
 
 Stack: TypeScript (NodeNext, strict), `@modelcontextprotocol/sdk`, `googleapis`, Zod v4, vitest,
@@ -52,7 +52,7 @@ classification derives automatically from annotations via `isReadOnlyTool`. Two 
 
 - **Client-side** (`pnpm run client`): emits Codex/Claude/Copilot config that disables dangerous
   tools; server still registers everything.
-- **Server-side** (`KOZOCOM_MCP_SAFE_MODE=1`): `selectGoogleTools(true)` registers only read-only tools.
+- **Server-side** (`QUANG_MCP_SAFE_MODE=1`): `selectGoogleTools(true)` registers only read-only tools.
 
 Adding/re-annotating a tool updates the safe set automatically — but keep `setup/setup.test.ts`
 and `services/registry.test.ts` assertions in sync.
@@ -85,7 +85,7 @@ mock `../google.js` only for the auth-failure path. Each handler needs happy-pat
 
 ## Auth & secrets
 
-- Token in `~/.kozocom-mcp/` (override: `KOZOCOM_MCP_DIR`, `GOOGLE_OAUTH_CREDENTIALS`,
+- Token in `~/.quang-mcp/` (override: `QUANG_MCP_DIR`, `GOOGLE_OAUTH_CREDENTIALS`,
   `GOOGLE_OAUTH_TOKEN`). `client_secret.json` / `token.json` are **git-ignored — never commit**.
 - Published package embeds only public OAuth `client_id`; login uses PKCE. Scopes in `config/constants.ts`; changing them needs re-login
   (delete old token first). External+Testing consent expires refresh tokens after 7 days — prefer
@@ -97,4 +97,4 @@ mock `../google.js` only for the auth-failure path. Each handler needs happy-pat
 
 Server holds **full read/write** Drive + Sheets scopes — write/delete tools are real side effects.
 `drive_delete_file` trashes by default; `permanent: true` is irreversible. For untrusted clients use a
-`kozocom-mcp client` snippet and/or `KOZOCOM_MCP_SAFE_MODE=1`.
+`quang-mcp client` snippet and/or `QUANG_MCP_SAFE_MODE=1`.

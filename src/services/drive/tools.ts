@@ -134,7 +134,7 @@ const downloadFileInput = {
   save_path: z
     .string()
     .optional()
-    .describe("Path under KOZOCOM_MCP_LOCAL_FILE_ROOT to write the downloaded bytes"),
+    .describe("Path under QUANG_MCP_LOCAL_FILE_ROOT to write the downloaded bytes"),
 };
 
 export async function driveDownloadFile(
@@ -176,7 +176,7 @@ Args:
   - export_mime_type (string, optional): for Google-native files, e.g. 'text/csv', 'text/plain',
     'application/pdf', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'.
     Defaults: Sheets→text/csv, Docs→text/plain, Slides→application/pdf.
-  - save_path (string, optional): write bytes under KOZOCOM_MCP_LOCAL_FILE_ROOT. Required for
+  - save_path (string, optional): write bytes under QUANG_MCP_LOCAL_FILE_ROOT. Required for
     binary content; if omitted, only text content is returned inline.
 
 Returns (text content inline) or { file_id, saved_to, bytes, mime_type } when saved to disk.`,
@@ -249,7 +249,7 @@ const uploadFileTool = driveTool({
 Args:
   - name (string): file name to create
   - content (string, optional): inline text content
-  - local_path (string, optional): path under KOZOCOM_MCP_LOCAL_FILE_ROOT to upload (takes precedence)
+  - local_path (string, optional): path under QUANG_MCP_LOCAL_FILE_ROOT to upload (takes precedence)
   - mime_type (string, optional): e.g. 'text/plain', 'text/csv', 'application/pdf' (default octet-stream)
   - parent_id (string, optional): destination folder ID
 

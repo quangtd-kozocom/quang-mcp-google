@@ -48,8 +48,8 @@ jobs:
       - name: Build with embedded OAuth client
         run: pnpm build
         env:
-          KOZOCOM_GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.KOZOCOM_GOOGLE_OAUTH_CLIENT_ID }}
-          KOZOCOM_GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.KOZOCOM_GOOGLE_OAUTH_CLIENT_SECRET }}
+          QUANG_GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.QUANG_GOOGLE_OAUTH_CLIENT_ID }}
+          QUANG_GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.QUANG_GOOGLE_OAUTH_CLIENT_SECRET }}
 
       - name: Publish to npm
         run: npm publish

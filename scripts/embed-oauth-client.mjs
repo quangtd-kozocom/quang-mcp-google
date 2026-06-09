@@ -2,8 +2,8 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-const clientId = process.env.KOZOCOM_GOOGLE_OAUTH_CLIENT_ID;
-const clientSecret = process.env.KOZOCOM_GOOGLE_OAUTH_CLIENT_SECRET;
+const clientId = process.env.QUANG_GOOGLE_OAUTH_CLIENT_ID;
+const clientSecret = process.env.QUANG_GOOGLE_OAUTH_CLIENT_SECRET;
 const outputPath = join("dist", "google", "generated", "oauth-client.js");
 
 if (!clientId) {

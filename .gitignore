@@ -6,5 +6,5 @@ dist/
 # Google OAuth secrets — never commit
 client_secret*.json
 token.json
-.kozocom-mcp/
+.quang-mcp/
 coverage/

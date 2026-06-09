@@ -23,7 +23,7 @@ export const IDENTITY_SCOPES = ["https://www.googleapis.com/auth/userinfo.email"
 export const SCOPES = [DRIVE_SCOPE, SHEETS_SCOPE, ...IDENTITY_SCOPES];
 
 /** Directory holding the optional OAuth client config and cached token. */
-export const CONFIG_DIR = process.env.KOZOCOM_MCP_DIR ?? join(homedir(), ".kozocom-mcp");
+export const CONFIG_DIR = process.env.QUANG_MCP_DIR ?? join(homedir(), ".quang-mcp");
 
 /** Path to an optional downloaded Google OAuth client JSON. */
 export const CLIENT_SECRET_PATH =
@@ -40,10 +40,10 @@ export const CHARACTER_LIMIT = 25000;
  * destructive tools (delete/clear) are not registered. The `config` CLI command
  * emits this in the generated MCP config so AI clients can't destroy data.
  */
-const SAFE_MODE_ENV = "KOZOCOM_MCP_SAFE_MODE";
+const SAFE_MODE_ENV = "QUANG_MCP_SAFE_MODE";
 
 /** Whether this process is running with dangerous tools disabled. */
 export const SAFE_MODE = process.env[SAFE_MODE_ENV] === "1";
 
 /** Env var naming the only directory local_path/save_path may read/write. */
-export const LOCAL_FILE_ROOT_ENV = "KOZOCOM_MCP_LOCAL_FILE_ROOT";
+export const LOCAL_FILE_ROOT_ENV = "QUANG_MCP_LOCAL_FILE_ROOT";

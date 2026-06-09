@@ -39,7 +39,7 @@ const asDrive = (d: ReturnType<typeof fakeDrive>): drive_v3.Drive => d as unknow
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.stubEnv("KOZOCOM_MCP_LOCAL_FILE_ROOT", "");
+  vi.stubEnv("QUANG_MCP_LOCAL_FILE_ROOT", "");
 });
 
 afterEach(() => vi.unstubAllEnvs());
