@@ -4,142 +4,120 @@ Guidance for AI agents working in this repository.
 
 ## What this is
 
-`kozocom-mcp` is a **Model Context Protocol (MCP) server** that exposes **Google Drive** and
-**Google Sheets** as tools over **stdio**. It authenticates via **OAuth user login** (browser
-consent, cached + auto-refreshed token) — not a service account.
+`kozocom-mcp` is an **MCP server** exposing **Google Drive** and **Google Sheets** as tools over
+**stdio**. Auth is **OAuth user login** (browser consent, cached + auto-refreshed token), not a
+service account.
 
 Stack: TypeScript (NodeNext, strict), `@modelcontextprotocol/sdk`, `googleapis`, Zod v4, vitest,
 oxlint. Package manager: **pnpm**.
 
+## Design principles (apply to every change)
+
+1. **Pick the simplest option.** Before implementing, ask: is this the simplest, easiest-to-read,
+   easiest-to-maintain way to do it? If not, reconsider before writing code.
+
 ## Commands
 
-| Command          | Use                                                   |
-| ---------------- | ----------------------------------------------------- |
-| `pnpm install`   | Install dependencies                                  |
-| `pnpm build`     | Compile to `dist/` (uses `tsconfig.build.json`)       |
-| `pnpm typecheck` | `tsc --noEmit` over all of `src/` **including tests**  |
-| `pnpm lint`      | oxlint                                                |
-| `pnpm test`      | Run vitest once (fully mocked, no network/credentials) |
-| `pnpm test:watch`| vitest watch mode                                     |
-| `pnpm login`     | Sign in (`auth login`); needs built `dist/`           |
-| `pnpm logout`    | Sign out (`auth logout`) — delete the cached token    |
-| `pnpm run setup` | Check setup and print MCP config                      |
-| `pnpm run client`| Print MCP config with dangerous tools disabled        |
-| `pnpm login:dev` / `logout:dev` / `setup:dev` / `client:dev` | Same commands from source via tsx |
-| `pnpm dev`       | Run server with hot reload                            |
+| Command          | Use                                                    |
+| ---------------- | ------------------------------------------------------ |
+| `pnpm install`   | Install dependencies                                   |
+| `pnpm build`     | Compile to `dist/` (`tsconfig.build.json`)             |
+| `pnpm typecheck` | `tsc --noEmit` over all of `src/` including tests      |
+| `pnpm lint`      | oxlint                                                 |
+| `pnpm test`      | vitest once (fully mocked, no network/credentials)     |
+| `pnpm dev`       | Run server with hot reload                             |
+| `pnpm login` / `logout` | Sign in / out (needs built `dist/`)             |
+| `pnpm run setup` | Check setup and print MCP config                       |
+| `pnpm run client`| Print MCP config with dangerous tools disabled         |
 
-> `setup` and `client` are pnpm built-ins, so use `pnpm run setup` / `pnpm run client` (bare
-> `pnpm client` runs pnpm's own command and never reaches the script). Pass flags **without** a
-> `--` separator — pnpm forwards `--` literally and commander rejects it. So:
-> `pnpm run client codex` ✅ (not `pnpm run client -- codex`). Or skip pnpm entirely and call
-> the binary: `node dist/cli.js client codex`. The real entry point is the `kozocom-mcp` binary.
+`:dev` variants (`login:dev`, `setup:dev`, …) run from source via tsx. `setup`/`client` are pnpm
+built-ins — use `pnpm run setup` / `pnpm run client`, and pass flags **without** `--`
+(`pnpm run client codex` ✅). Or call the binary directly: `node dist/cli.js client codex`.
 
-**Before considering any change done:** `pnpm typecheck && pnpm lint && pnpm test` must all pass,
-and `pnpm build` must succeed.
+**Before any change is done:** `pnpm typecheck && pnpm lint && pnpm test` pass and `pnpm build`
+succeeds.
 
 ## Layout
 
 ```
 src/
-  cli.ts            # commander CLI: `auth login|logout|status` / `setup` / `client` commands; default = start server
+  cli.ts            # commander CLI: auth login|logout|status / setup / client; default = start server
   index.ts          # startServer(): McpServer + registerGoogleTools() + stdio transport
-  login.ts          # legacy standalone login entry (login now goes through cli.ts)
   setup.ts          # runSetup(), mcpConfigSnippet(), configReport() — per-client MCP config text
   constants.ts      # SCOPES, file paths, CHARACTER_LIMIT, server name/version, SAFE_MODE(_ENV)
   format.ts         # ToolResult helpers, truncation, handleGoogleError, NotAuthenticatedError
-  auth.ts           # OAuth2 token load/save/clear, status, loopback login flow (module functions)
+  auth.ts           # OAuth2 token load/save/clear, status, loopback login flow
   google.ts         # getGoogleClients() -> authorized { drive, sheets }
-  drive-adapter.ts  # DriveFileAdapter: anti-corruption layer over the Drive v3 API
-  sheets-adapter.ts # SheetsAdapter: anti-corruption layer over the Sheets v4 API
+  drive-adapter.ts  # DriveFileAdapter: anti-corruption layer over Drive v3
+  sheets-adapter.ts # SheetsAdapter: anti-corruption layer over Sheets v4
   tools/
-    define.ts       # tool / driveTool / sheetsTool factories + registerAll; isReadOnlyTool;
-                    #   each ToolRegistration carries its toolName + annotations for filtering
-    auth.ts         # google_auth_status (login/logout are CLI-only: `kozocom-mcp auth login|logout`)
+    define.ts       # tool/driveTool/sheetsTool factories + registerAll; isReadOnlyTool
+    auth.ts         # google_auth_status (login/logout are CLI-only)
     drive.ts        # drive_* tools
     sheets.ts       # sheets_* tools
-    google.ts       # googleTools, selectGoogleTools(safeMode), READ_ONLY/DANGEROUS_TOOL_NAMES,
-                    #   registerGoogleTools(): aggregate + register the selected tools
+    google.ts       # selectGoogleTools(safeMode), READ_ONLY/DANGEROUS_TOOL_NAMES, registerGoogleTools()
   **/*.test.ts      # colocated vitest unit tests
 ```
 
 ## CLI & safe mode
 
-The `kozocom-mcp` binary (`src/cli.ts`, built on `commander`) has these commands plus a default:
+`kozocom-mcp` (`src/cli.ts`) commands: `auth login|logout|status`, `setup` (`-c/--client`,
+`-y/--yes`), `client [codex|claude|copilot|all]` (dangerous tools disabled; `--include-dangerous`
+keeps them), and no command = start the stdio server. Sign-in/out are **CLI-only** — there are no
+`google_login`/`google_logout` tools, so an untrusted client can't trigger consent or wipe the token.
 
-- `auth login` — run the OAuth flow and cache the token.
-- `auth logout` — delete the cached token (sign out / switch accounts).
-- `auth status` — print the signed-in account, granted scopes, and token expiry.
-- `setup` — check config dir / client secret, report auth status, print MCP config (`-c/--client`,
-  `-y/--yes`). Login is **not** part of setup anymore — it directs you to `auth login`.
-- `client [agent]` — print MCP config with **dangerous tools disabled** (positional
-  `agent` = `codex|claude|copilot|all`, default `all`; `--include-dangerous` keeps them all).
-- no command (or `start`/`server`) — launch the stdio server.
+**"Dangerous" = any non-read-only tool** (`readOnlyHint !== true`). Classification flows from the
+`readOnlyHint` annotation via `isReadOnlyTool`, so the name lists in `tools/google.ts` derive
+automatically — adding a tool needs no extra wiring. Two disabling paths:
 
-> Sign-in/out are **CLI-only** — there are no `google_login`/`google_logout` MCP tools. An
-> untrusted client can never trigger a browser consent or wipe the token; only `google_auth_status`
-> remains as a (read-only) tool.
+- **Client-side** (what `client` emits): Codex `enabled_tools`/`disabled_tools`, Claude Code
+  `permissions.deny`, VS Code Copilot `tools` set. Server still registers everything.
+- **Server-side** (`KOZOCOM_MCP_SAFE_MODE=1`): `selectGoogleTools(true)` registers only read-only
+  tools — the dangerous ones never exist on the wire.
 
-**"Dangerous" = any tool that is not read-only** (`readOnlyHint !== true`) — every create/write/
-delete/share tool. The classification is driven solely by the
-honest `readOnlyHint` annotation via `isReadOnlyTool` (`tools/define.ts`); the enabled/disabled name
-lists in `tools/google.ts` derive from it, so adding a tool needs no extra wiring. Disabling happens
-two independent ways:
+Adding/re-annotating a tool updates the safe set automatically, but keep `setup.test.ts`'s
+enabled/disabled assertions in sync.
 
-- **Client-side (what `client` emits):** Codex `enabled_tools`/`disabled_tools`, a Claude Code
-  `permissions.deny` list (`mcp__kozocom-google__<tool>`), and a read-only `tools` set for VS Code
-  Copilot. The server still registers everything; the client just won't call the dangerous tools.
-- **Server-side (`KOZOCOM_MCP_SAFE_MODE=1`):** `selectGoogleTools(true)` registers only read-only
-  tools, so the dangerous ones never exist on the wire. This is the harder guarantee.
+## Conventions
 
-When you add or re-annotate a tool, the safe set updates automatically — but keep `setup.test.ts`'s
-enabled/disabled name assertions in sync.
-
-## Conventions (match these when editing)
-
-- **Tool registration:** define each tool with the `tool` / `driveTool` / `sheetsTool` factory in
-  `tools/define.ts` (`{ name, title, description, inputSchema, annotations, run }`), collect them into a
-  `ToolRegistration[]`, and register via `registerAll`. `inputSchema` is a **Zod raw shape**
-  (`{ field: z.string()... }`), NOT a wrapped `z.object()`.
-- **Tool naming:** snake_case, service-prefixed (`drive_*`, `sheets_*`, `google_*`).
+- **Tool registration:** define via the `tool`/`driveTool`/`sheetsTool` factory in `define.ts`
+  (`{ name, title, description, inputSchema, annotations, run }`), collect into `ToolRegistration[]`,
+  register via `registerAll`. `inputSchema` is a **Zod raw shape**, not a wrapped `z.object()`.
+- **Naming:** snake_case, service-prefixed (`drive_*`, `sheets_*`, `google_*`).
 - **Descriptions:** include `Args:` and `Returns:` blocks; set annotations honestly
-  (`readOnlyHint` / `destructiveHint` / `idempotentHint` / `openWorldHint`).
-- **Handler pattern:** each tool's logic is an **exported pure function** `(client, args) => Promise<ToolResult>`
-  (e.g. `driveListFiles(drive, args)`) passed as the factory's `run`. The arg type is **derived from the
-  schema** via `ArgsOf<typeof inputSchema>` — declare the Zod shape once; never hand-write a duplicate
-  arg interface. The factory injects the authorized client and maps errors, so the `run` function stays
-  unit-testable by calling it directly with a fake client (no need to mock `google.js`).
-- **API access:** Google API calls live in `DriveFileAdapter` / `SheetsAdapter`, not in handlers.
-  Handlers translate snake_case args → adapter calls and shape the response. Add a new API call as an
-  adapter method.
-- **Errors:** never throw out of a tool; the factory catches and returns `errorResult(handleGoogleError(e))`.
-  Add new status cases to `handleGoogleError` rather than inline strings.
-- **Output:** return both human text and `structuredContent`; respect `response_format`
-  (`markdown` default | `json`) and truncate via `toolResult` / `CHARACTER_LIMIT`.
-- **Types:** strict, no `any` in `src/` (tests may use a single annotated `as any` for the fake server).
+  (`readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`).
+- **Handlers:** each is an **exported pure function** `(client, args) => Promise<ToolResult>`, passed
+  as the factory's `run`. Derive the arg type via `ArgsOf<typeof inputSchema>` — never hand-write a
+  duplicate. The factory injects the client and maps errors, so handlers are testable with a fake client.
+- **API access:** Google calls live in `DriveFileAdapter`/`SheetsAdapter`, not handlers. Add a new
+  call as an adapter method; handlers translate snake_case args → adapter calls and shape the response.
+- **Errors:** never throw out of a tool — the factory returns `errorResult(handleGoogleError(e))`. Add
+  new status cases to `handleGoogleError`, not inline strings.
+- **Output:** return human text + `structuredContent`; respect `response_format` (`markdown` default |
+  `json`) and truncate via `toolResult`/`CHARACTER_LIMIT`.
+- **Types:** strict, no `any` in `src/` (tests may use one annotated `as any` for the fake server).
 
 ## Testing
 
-- Tests are colocated `*.test.ts`, fully mocked — **never** hit the real Google API or filesystem.
-- Mock `googleapis` clients with plain `vi.fn()` objects; call the exported handler directly,
-  passing the fake cast via `asDrive(...)` / `asSheets(...)`.
-- Mock `node:fs/promises` for `auth.ts` token tests; mock `../google.js` only to test the
-  auth-failure wrapper path.
-- Every tool handler should have at least a happy-path and an error/validation-path test.
+- Colocated `*.test.ts`, fully mocked — **never** hit the real Google API or filesystem.
+- Mock `googleapis` clients with `vi.fn()`; call the handler directly via `asDrive(...)`/`asSheets(...)`.
+- Mock `node:fs/promises` for `auth.ts` token tests; mock `../google.js` only for the auth-failure path.
+- Every handler needs at least a happy-path and an error/validation-path test.
 
-## Auth & secrets — gotchas
+## Auth & secrets
 
-- Secrets live in `~/.kozocom-mcp/` (override via `KOZOCOM_MCP_DIR`, `GOOGLE_OAUTH_CREDENTIALS`,
-  `GOOGLE_OAUTH_TOKEN`). `client_secret.json` and `token.json` are **git-ignored — never commit them**.
-- OAuth client must be the **Desktop app** type (loopback redirect). Scopes are in `constants.ts`;
-  changing them requires re-running `pnpm login` (delete the old token first).
-- Consent screen in **External + Testing** expires refresh tokens after 7 days — prefer **Internal**
-  for Workspace orgs. See `SETUP.md`.
-- Full setup walkthrough: **`SETUP.md`**. Client config snippets: **`README.md`**.
+- Secrets live in `~/.kozocom-mcp/` (override: `KOZOCOM_MCP_DIR`, `GOOGLE_OAUTH_CREDENTIALS`,
+  `GOOGLE_OAUTH_TOKEN`). `client_secret.json` / `token.json` are **git-ignored — never commit them**.
+- OAuth client must be **Desktop app** type. Scopes are in `constants.ts`; changing them needs a
+  re-login (delete the old token first).
+- Consent in **External + Testing** expires refresh tokens after 7 days — prefer **Internal** for
+  Workspace orgs.
+- Don't log tokens/secrets to stdout (it's the JSON-RPC channel) — log to **stderr**.
+- Full setup: `SETUP.md`. Client config snippets: `README.md`.
 
 ## Scope notes
 
-- This server holds **full read/write** scopes for Drive and Sheets. Treat write/delete tools as
-  real side effects. `drive_delete_file` trashes by default; `permanent: true` is irreversible.
-- For untrusted/agentic clients, hand out a `kozocom-mcp client` snippet (dangerous tools disabled)
-  and/or run the server with `KOZOCOM_MCP_SAFE_MODE=1`. See **CLI & safe mode** above.
-- Don't log token contents or secrets to stdout — stdout is the JSON-RPC channel; log to **stderr**.
+- This server holds **full read/write** Drive + Sheets scopes — treat write/delete tools as real side
+  effects. `drive_delete_file` trashes by default; `permanent: true` is irreversible.
+- For untrusted/agentic clients, hand out a `kozocom-mcp client` snippet and/or run with
+  `KOZOCOM_MCP_SAFE_MODE=1`.
