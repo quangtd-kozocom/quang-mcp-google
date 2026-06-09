@@ -5,13 +5,14 @@ import { DANGEROUS_TOOL_NAMES, READ_ONLY_TOOL_NAMES } from "../services/registry
 describe("parseClient", () => {
   it("accepts known clients", () => {
     expect(parseClient("codex")).toBe("codex");
+    expect(parseClient("kiro")).toBe("kiro");
     expect(parseClient("all")).toBe("all");
     expect(parseClient(undefined)).toBeUndefined();
   });
 
   it("rejects unknown clients", () => {
     expect(() => parseClient("unknown")).toThrow(
-      'Unknown client "unknown". Use codex, claude, copilot, or all.',
+      'Unknown client "unknown". Use codex, claude, copilot, kiro, or all.',
     );
   });
 });
@@ -73,6 +74,24 @@ describe("mcpConfigSnippet", () => {
     for (const name of DANGEROUS_TOOL_NAMES) {
       expect(snippet).toContain(`mcp__kozocom-google__${name}`);
     }
+  });
+
+  it("builds Kiro mcp.json with the mcpServers wrapper", () => {
+    const snippet = mcpConfigSnippet({ client: "kiro", credentialsPath: "/tmp/cs.json" });
+    const json = JSON.parse(snippet.split("\n\n")[1] ?? "");
+    expect(json.mcpServers["kozocom-google"]).toEqual({
+      command: "npx",
+      args: ["-y", "-p", "kozocom-mcp-google", "kozocom-mcp"],
+      env: { GOOGLE_OAUTH_CREDENTIALS: "/tmp/cs.json" },
+      disabled: false,
+      autoApprove: [],
+    });
+  });
+
+  it("auto-approves only the read-only tools for Kiro in safe mode", () => {
+    const snippet = mcpConfigSnippet({ client: "kiro", credentialsPath: "/tmp/cs.json", safeMode: true });
+    const json = JSON.parse(snippet.split("\n\n")[1] ?? "");
+    expect(json.mcpServers["kozocom-google"].autoApprove).toEqual([...READ_ONLY_TOOL_NAMES]);
   });
 
   it("names the read-only tool set for Copilot in safe mode", () => {

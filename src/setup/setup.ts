@@ -8,7 +8,7 @@ import { DANGEROUS_TOOL_NAMES, READ_ONLY_TOOL_NAMES } from "../services/registry
 
 const SERVER_KEY = "kozocom-google";
 
-type ClientName = "codex" | "claude" | "copilot" | "all";
+type ClientName = "codex" | "claude" | "copilot" | "kiro" | "all";
 
 interface SetupOptions {
   client?: ClientName;
@@ -106,6 +106,26 @@ function copilotSnippet(command: string, args: string[], credentialsPath: string
   );
 }
 
+function kiroSnippet(command: string, args: string[], credentialsPath: string | null, safeMode: boolean): string {
+  return JSON.stringify(
+    {
+      mcpServers: {
+        [SERVER_KEY]: {
+          command,
+          args,
+          ...(credentialsPath ? { env: { GOOGLE_OAUTH_CREDENTIALS: credentialsPath } } : {}),
+          disabled: false,
+          // Kiro has no per-tool disable key, so auto-approve only the read-only
+          // tools; the dangerous ones still require an explicit confirmation.
+          autoApprove: safeMode ? [...READ_ONLY_TOOL_NAMES] : [],
+        },
+      },
+    },
+    null,
+    2,
+  );
+}
+
 export function mcpConfigSnippet({
   client,
   command = "npx",
@@ -116,12 +136,19 @@ export function mcpConfigSnippet({
   const codex = codexSnippet(command, args, credentialsPath, safeMode);
   const claude = claudeSnippet(command, args, credentialsPath, safeMode);
   const copilot = copilotSnippet(command, args, credentialsPath, safeMode);
+  const kiro = kiroSnippet(command, args, credentialsPath, safeMode);
+
+  const codexSection = `Codex (~/.codex/config.toml):\n\n${codex}`;
+  const claudeSection = `Claude Code:\n\n${claude}`;
+  const copilotSection = `GitHub Copilot / VS Code (.vscode/mcp.json or global mcp.json):\n\n${copilot}`;
+  const kiroSection = `Kiro CLI (~/.kiro/settings/mcp.json or <project>/.kiro/settings/mcp.json):\n\n${kiro}`;
 
   const sections: Record<ClientName, string> = {
-    codex: `Codex (~/.codex/config.toml):\n\n${codex}`,
-    claude: `Claude Code:\n\n${claude}`,
-    copilot: `GitHub Copilot / VS Code (.vscode/mcp.json or global mcp.json):\n\n${copilot}`,
-    all: `Codex (~/.codex/config.toml):\n\n${codex}\n\nClaude Code:\n\n${claude}\n\nGitHub Copilot / VS Code (.vscode/mcp.json or global mcp.json):\n\n${copilot}`,
+    codex: codexSection,
+    claude: claudeSection,
+    copilot: copilotSection,
+    kiro: kiroSection,
+    all: [codexSection, claudeSection, copilotSection, kiroSection].join("\n\n"),
   };
 
   return sections[client];
@@ -154,8 +181,9 @@ export type { ClientName, SetupOptions };
 
 export function parseClient(value: string | undefined): ClientName | undefined {
   if (!value) return undefined;
-  if (value === "codex" || value === "claude" || value === "copilot" || value === "all") return value;
-  throw new Error(`Unknown client "${value}". Use codex, claude, copilot, or all.`);
+  if (value === "codex" || value === "claude" || value === "copilot" || value === "kiro" || value === "all")
+    return value;
+  throw new Error(`Unknown client "${value}". Use codex, claude, copilot, kiro, or all.`);
 }
 
 async function prompt(question: string, fallback: string): Promise<string> {
@@ -170,7 +198,7 @@ async function prompt(question: string, fallback: string): Promise<string> {
 
 async function chooseClient(defaultClient: ClientName, yes: boolean): Promise<ClientName> {
   if (yes) return defaultClient;
-  const answer = await prompt("Which MCP client? codex, claude, copilot, or all", defaultClient);
+  const answer = await prompt("Which MCP client? codex, claude, copilot, kiro, or all", defaultClient);
   return parseClient(answer) ?? defaultClient;
 }
 

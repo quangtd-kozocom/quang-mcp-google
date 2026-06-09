@@ -5,7 +5,7 @@ import { SERVER_VERSION, TOKEN_PATH } from "./config/constants.js";
 import { startServer } from "./index.js";
 import { type ClientName, configReport, parseClient, runSetup } from "./setup/setup.js";
 
-const CLIENT_CHOICES = ["codex", "claude", "copilot", "all"] as const;
+const CLIENT_CHOICES = ["codex", "claude", "copilot", "kiro", "all"] as const;
 
 async function login(): Promise<void> {
   console.error("Starting Google sign-in... a browser window will open.\n");

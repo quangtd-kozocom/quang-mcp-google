@@ -17,7 +17,7 @@ kozocom-mcp client codex        # print safe (read-only) MCP config
 | --- | --- |
 | `auth login` / `logout` / `status` | sign in / out / show account, scopes, expiry |
 | `setup` | check config dir + auth, print MCP config for all clients |
-| `client [codex\|claude\|copilot\|all]` | print MCP config with **mutating tools disabled** (`--include-dangerous` keeps them) |
+| `client [codex\|claude\|copilot\|kiro\|all]` | print MCP config with **mutating tools disabled** (`--include-dangerous` keeps them) |
 | *(no command)* | start the stdio server |
 
 ## Tools
