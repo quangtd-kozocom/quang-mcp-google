@@ -10,19 +10,12 @@ token is cached and auto-refreshed — no repeated logins, no service accounts.
 
 ## Quick start
 
-### Install from GitHub Packages
+### Install from npm
 
-Log npm into the private GitHub Packages registry:
-
-```bash
-npm login --scope=@quangtd-kozocom --registry=https://npm.pkg.github.com --auth-type=legacy
-```
-
-Use your GitHub username, a GitHub Personal Access Token as the password, and your GitHub email.
-Then install:
+Install and sign in:
 
 ```bash
-npm install -g @quangtd-kozocom/kozocom-mcp-google
+npm install -g kozocom-mcp-google
 kozocom-mcp auth login
 kozocom-mcp client codex
 ```
@@ -50,7 +43,7 @@ pnpm build
 pnpm setup      # checks setup and prints MCP config
 ```
 
-The private published package embeds the internal Desktop OAuth client at build time. From source,
+The published package embeds the internal Desktop OAuth client at build time. From source,
 use `GOOGLE_OAUTH_CREDENTIALS=/path/to/client_secret.json` or put a Desktop OAuth JSON at
 `~/.kozocom-mcp/client_secret.json`.
 
@@ -99,7 +92,7 @@ use `GOOGLE_OAUTH_CREDENTIALS=/path/to/client_secret.json` or put a Desktop OAut
 
 ## Using with an MCP client
 
-All clients launch the server over stdio. If installed from GitHub Packages, use the `npx` config below.
+All clients launch the server over stdio. If installed from npm, use the `npx` config below.
 If running from source, build first (`pnpm build`), then sign in (`pnpm login`) or run
 `pnpm setup`. The absolute source path below assumes this repo location — adjust if you move it.
 
@@ -108,7 +101,7 @@ If running from source, build first (`pnpm build`), then sign in (`pnpm login`) 
 ```json
 {
   "command": "npx",
-  "args": ["-y", "-p", "@quangtd-kozocom/kozocom-mcp-google", "kozocom-mcp"]
+  "args": ["-y", "-p", "kozocom-mcp-google", "kozocom-mcp"]
 }
 ```
 
@@ -124,7 +117,7 @@ kozocom-mcp
 
 ```bash
 claude mcp add kozocom-google \
-  -- npx -y -p @quangtd-kozocom/kozocom-mcp-google kozocom-mcp
+  -- npx -y -p kozocom-mcp-google kozocom-mcp
 ```
 
 Or add to `.mcp.json` / your Claude config:
@@ -134,7 +127,7 @@ Or add to `.mcp.json` / your Claude config:
   "mcpServers": {
     "kozocom-google": {
       "command": "npx",
-      "args": ["-y", "-p", "@quangtd-kozocom/kozocom-mcp-google", "kozocom-mcp"]
+      "args": ["-y", "-p", "kozocom-mcp-google", "kozocom-mcp"]
     }
   }
 }
@@ -147,7 +140,7 @@ In `~/.codex/config.toml`:
 ```toml
 [mcp_servers.kozocom-google]
 command = "npx"
-args = ["-y", "-p", "@quangtd-kozocom/kozocom-mcp-google", "kozocom-mcp"]
+args = ["-y", "-p", "kozocom-mcp-google", "kozocom-mcp"]
 ```
 
 ### GitHub Copilot (VS Code)
@@ -160,17 +153,19 @@ In `.vscode/mcp.json` (or the global `mcp.json`):
     "kozocom-google": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "-p", "@quangtd-kozocom/kozocom-mcp-google", "kozocom-mcp"]
+      "args": ["-y", "-p", "kozocom-mcp-google", "kozocom-mcp"]
     }
   }
 }
 ```
 
 > The `GOOGLE_OAUTH_CREDENTIALS` env is only needed for local development or custom OAuth clients.
-> The private published package uses its embedded internal OAuth client. The cached token lives at
+> The published package uses its embedded internal OAuth client. The cached token lives at
 > `~/.kozocom-mcp/token.json`.
 
 ## Security
 
 `token.json` grants full read/write to your Drive and Sheets — keep it private. Run
 `kozocom-mcp auth logout` to revoke locally. Do not commit downloaded OAuth JSON files or user tokens.
+The embedded Desktop OAuth client identifies the internal Google app; access still requires an
+allowed Workspace account and user consent.

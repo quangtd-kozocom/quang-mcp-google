@@ -1,5 +1,5 @@
 {
-  "name": "@quangtd-kozocom/kozocom-mcp-google",
+  "name": "kozocom-mcp-google",
   "version": "0.1.1",
   "description": "Kozocom MCP server",
   "type": "module",
@@ -9,7 +9,7 @@
     "url": "git+ssh://git@github.com/quangtd-kozocom/kozocom-mcp-google.git"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "access": "public"
   },
   "bin": {
     "kozocom-mcp": "dist/cli.js",

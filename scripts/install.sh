@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-PACKAGE_SPEC="${PACKAGE_SPEC:-@quangtd-kozocom/kozocom-mcp-google}"
+PACKAGE_SPEC="${PACKAGE_SPEC:-kozocom-mcp-google}"
 
 if ! command -v npm >/dev/null 2>&1; then
   echo "npm is required. Install Node.js first: https://nodejs.org/" >&2

@@ -27,7 +27,7 @@ interface McpSnippetOptions {
   safeMode?: boolean;
 }
 
-const PACKAGE_NAME = "@quangtd-kozocom/kozocom-mcp-google";
+const PACKAGE_NAME = "kozocom-mcp-google";
 
 async function exists(path: string): Promise<boolean> {
   try {
