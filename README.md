@@ -9,6 +9,7 @@ client ID ships in npm, consent happens in browser, token is cached and auto-ref
 npm install -g terra-mcp-google
 terra-mcp auth login          # browser consent, caches token
 terra-mcp client codex        # print safe (read-only) MCP config
+npx skills add quangtd-kozocom/terra-mcp-google   # install the agent skill
 ```
 
 ## CLI
