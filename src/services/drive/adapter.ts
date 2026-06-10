@@ -50,6 +50,16 @@ export class DriveFileAdapter {
     return data;
   }
 
+  /** Cheap liveness probe: is this file currently in the trash? Throws (404) if it's gone. */
+  async getFileTrashed(fileId: string): Promise<{ trashed: boolean }> {
+    const { data } = await this.drive.files.get({
+      fileId,
+      fields: "trashed",
+      supportsAllDrives: true,
+    });
+    return { trashed: data.trashed === true };
+  }
+
   async downloadFile(args: {
     fileId: string;
     exportMimeType?: string;

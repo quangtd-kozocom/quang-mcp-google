@@ -62,6 +62,7 @@ const demo = (() => {
       canWrite: false,
       canDelete: false,
       createdAt: "2026-06-07T08:05:00.000Z",
+      status: "trashed",
     },
   ];
 

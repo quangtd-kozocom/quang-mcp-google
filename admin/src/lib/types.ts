@@ -1,6 +1,9 @@
 export type Mode = "off" | "read_open" | "strict";
 export type Kind = "file" | "folder" | "spreadsheet";
 
+/** Live status of a grant's target in Drive (resolved server-side on list). */
+export type GrantStatus = "active" | "trashed" | "missing" | "unknown";
+
 export interface Grant {
   id: number;
   kind: Kind;
@@ -10,6 +13,8 @@ export interface Grant {
   canWrite: boolean;
   canDelete: boolean;
   createdAt: string;
+  /** Absent on older payloads / demo data; treated as `active`. */
+  status?: GrantStatus;
 }
 
 export interface DriveItem {

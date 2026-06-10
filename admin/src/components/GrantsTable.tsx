@@ -7,7 +7,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { ExternalLink, MoreVertical, Search, X } from "lucide-react";
-import type { Grant, Kind } from "../lib/types";
+import type { Grant, GrantStatus, Kind } from "../lib/types";
 import { driveUrl, formatDate } from "../lib/format";
 import { CopyId } from "./CopyId";
 import { GrantPermissions } from "./GrantPermissions";
@@ -53,6 +53,22 @@ const PERMS: { key: PermKey; label: string; perm: string }[] = [
   { key: "canDelete", label: "D", perm: "delete" },
 ];
 
+const STALE_TAG: Partial<Record<GrantStatus, { label: string; title: string }>> = {
+  trashed: { label: "trashed", title: "This file is in Google Drive's trash — restore it or revoke the grant." },
+  missing: { label: "deleted", title: "This file no longer exists in Google Drive — revoke the grant." },
+};
+
+/** A small badge flagging a grant whose Drive target is trashed or gone. */
+function StaleTag({ status }: { status?: GrantStatus }) {
+  const tag = status ? STALE_TAG[status] : undefined;
+  if (!tag) return null;
+  return (
+    <span className="stale-tag" data-status={status} title={tag.title}>
+      {tag.label}
+    </span>
+  );
+}
+
 function makeColumns(): ColumnDef<Grant>[] {
   return [
     {
@@ -63,6 +79,7 @@ function makeColumns(): ColumnDef<Grant>[] {
         <span className="resource-button">
           <KindIcon kind={row.original.kind} />
           <span>{row.original.name ?? "Untitled resource"}</span>
+          <StaleTag status={row.original.status} />
         </span>
       ),
     },
@@ -333,6 +350,14 @@ export function GrantsTable({
                     <KindIcon kind={selected.kind} />
                     {selected.kind}
                   </Badge>
+                  <span>Status</span>
+                  <span className="detail-status">
+                    {STALE_TAG[selected.status ?? "active"] ? (
+                      <StaleTag status={selected.status} />
+                    ) : (
+                      "Active"
+                    )}
+                  </span>
                   <span>Google ID</span>
                   <CopyId value={selected.googleId} />
                   <span>Link</span>

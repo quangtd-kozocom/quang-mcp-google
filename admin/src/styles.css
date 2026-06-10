@@ -550,6 +550,36 @@ code {
   white-space: nowrap;
 }
 
+.stale-tag {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 17px;
+  padding: 0 6px;
+  border-radius: 99px;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid var(--amber);
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+
+.stale-tag[data-status="missing"] {
+  border-color: var(--red);
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.detail-status {
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .badge {
   display: inline-flex;
   align-items: center;

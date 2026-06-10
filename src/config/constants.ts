@@ -105,6 +105,14 @@ export const DEFAULT_POLICY_MODE = process.env[ENV.POLICY_MODE] ?? "read_open";
 /** Port the `terra-mcp admin` web console listens on (default 4717). */
 export const ADMIN_PORT = Number(process.env[ENV.ADMIN_PORT] ?? 4717);
 
+/**
+ * How long the admin console caches each grant's live Drive status (trashed /
+ * missing). The UI polls grants every few seconds; this TTL means many polls
+ * share one Drive sweep instead of hitting `files.get` per grant per poll, so
+ * the rate-limit cost stays flat regardless of how long the console is left open.
+ */
+export const ADMIN_STATUS_TTL_MS = 30_000;
+
 /** Explicit override for the built admin SPA directory, when set. Lazy. */
 export const getAdminStaticDir = (): string | undefined => process.env[ENV.ADMIN_STATIC_DIR];
 

@@ -3,11 +3,18 @@ import { Hono } from "hono";
 import { readFile, stat } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, extname, join, normalize, resolve } from "node:path";
-import { ADMIN_PORT, getAdminStaticDir } from "../config/constants.js";
+import { ADMIN_PORT, ADMIN_STATUS_TTL_MS, getAdminStaticDir } from "../config/constants.js";
 import { getGoogleClients } from "../google/client.js";
 import { getAuthStatus } from "../google/auth.js";
 import { getPolicyStoreOrThrow } from "../policy/guard.js";
-import { type ApiDeps, driveSearcher, routeApi } from "./api.js";
+import {
+  type ApiDeps,
+  cachedFileStatuses,
+  driveFileStatuses,
+  type GrantStatus,
+  driveSearcher,
+  routeApi,
+} from "./api.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -26,9 +33,21 @@ const MIME: Record<string, string> = {
 
 /** Build the API dependencies from the live policy store + Google clients. */
 function buildDeps(): ApiDeps {
+  // Created once per server so the TTL cache survives across the UI's polls.
+  const resolveStatuses = async (ids: string[]): Promise<Record<string, GrantStatus>> => {
+    if (ids.length === 0) return {};
+    try {
+      return await driveFileStatuses((await getGoogleClients()).drive)(ids);
+    } catch {
+      // Couldn't even get a Drive client (e.g. signed out) — don't flag anything stale.
+      return Object.fromEntries(ids.map((id) => [id, "unknown" as const]));
+    }
+  };
+
   return {
     store: getPolicyStoreOrThrow(),
     searchDrive: async (query) => driveSearcher((await getGoogleClients()).drive)(query),
+    fileStatuses: cachedFileStatuses(resolveStatuses, ADMIN_STATUS_TTL_MS),
     authInfo: async () => {
       const status = await getAuthStatus().catch(() => ({ authenticated: false, email: null, name: null }));
       return { signedIn: status.authenticated, email: status.email ?? null, name: status.name ?? null };

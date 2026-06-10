@@ -24,7 +24,7 @@ describe("mcpConfigSnippet", () => {
         client: "codex",
         credentialsPath: "/tmp/client_secret.json",
       }),
-    ).toContain('args = ["-y","-p","terra-mcp-google","terra-mcp"]');
+    ).toContain('args = ["-y","--package=terra-mcp-google","terra-mcp"]');
   });
 
   it("builds VS Code Copilot JSON", () => {
@@ -35,10 +35,10 @@ describe("mcpConfigSnippet", () => {
 
     expect(JSON.parse(snippet.split("\n\n")[1] ?? "")).toEqual({
       servers: {
-        "kozocom-google": {
+        "terra-mcp-google": {
           type: "stdio",
           command: "npx",
-          args: ["-y", "-p", "terra-mcp-google", "terra-mcp"],
+          args: ["-y", "--package=terra-mcp-google", "terra-mcp"],
           env: { GOOGLE_OAUTH_CREDENTIALS: "/tmp/client_secret.json" },
         },
       },
@@ -68,20 +68,26 @@ describe("mcpConfigSnippet", () => {
     }
   });
 
+  it("uses --package= (not -p) so Claude's CLI doesn't steal it as --print", () => {
+    const snippet = mcpConfigSnippet({ client: "claude" });
+    expect(snippet).toContain("claude mcp add terra-mcp-google -- 'npx' '-y' '--package=terra-mcp-google' 'terra-mcp'");
+    expect(snippet).not.toMatch(/ '-p' /);
+  });
+
   it("emits a Claude permission deny list in safe mode", () => {
     const snippet = mcpConfigSnippet({ client: "claude", credentialsPath: "/tmp/cs.json", safeMode: true });
     expect(snippet).toContain("permissions");
     for (const name of DANGEROUS_TOOL_NAMES) {
-      expect(snippet).toContain(`mcp__kozocom-google__${name}`);
+      expect(snippet).toContain(`mcp__terra-mcp-google__${name}`);
     }
   });
 
   it("builds Kiro mcp.json with the mcpServers wrapper", () => {
     const snippet = mcpConfigSnippet({ client: "kiro", credentialsPath: "/tmp/cs.json" });
     const json = JSON.parse(snippet.split("\n\n")[1] ?? "");
-    expect(json.mcpServers["kozocom-google"]).toEqual({
+    expect(json.mcpServers["terra-mcp-google"]).toEqual({
       command: "npx",
-      args: ["-y", "-p", "terra-mcp-google", "terra-mcp"],
+      args: ["-y", "--package=terra-mcp-google", "terra-mcp"],
       env: { GOOGLE_OAUTH_CREDENTIALS: "/tmp/cs.json" },
       disabled: false,
       autoApprove: [],
@@ -91,13 +97,13 @@ describe("mcpConfigSnippet", () => {
   it("auto-approves only the read-only tools for Kiro in safe mode", () => {
     const snippet = mcpConfigSnippet({ client: "kiro", credentialsPath: "/tmp/cs.json", safeMode: true });
     const json = JSON.parse(snippet.split("\n\n")[1] ?? "");
-    expect(json.mcpServers["kozocom-google"].autoApprove).toEqual([...READ_ONLY_TOOL_NAMES]);
+    expect(json.mcpServers["terra-mcp-google"].autoApprove).toEqual([...READ_ONLY_TOOL_NAMES]);
   });
 
   it("names the read-only tool set for Copilot in safe mode", () => {
     const snippet = mcpConfigSnippet({ client: "copilot", credentialsPath: "/tmp/cs.json", safeMode: true });
     const json = JSON.parse(snippet.split("\n\n")[1] ?? "");
-    expect(json.servers["kozocom-google"].tools).toEqual([...READ_ONLY_TOOL_NAMES]);
+    expect(json.servers["terra-mcp-google"].tools).toEqual([...READ_ONLY_TOOL_NAMES]);
   });
 });
 

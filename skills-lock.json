@@ -43,6 +43,12 @@
       "skillPath": "skills/react-doctor/SKILL.md",
       "computedHash": "1acf87cf2ed6dc3e300796ac80c9421e0783b16cb301b67abba9b5224f594cf1"
     },
+    "skill-creator": {
+      "source": "anthropics/skills",
+      "sourceType": "github",
+      "skillPath": "skills/skill-creator/SKILL.md",
+      "computedHash": "5ea13a6d9f0d4bb694405d79acd00cadec0d21bb138c4dd10fcf3c500cb835c2"
+    },
     "to-issues": {
       "source": "mattpocock/skills",
       "sourceType": "github",

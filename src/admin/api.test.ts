@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import { type ApiDeps, kindOfMime, routeApi } from "./api.js";
+import { type ApiDeps, cachedFileStatuses, kindOfMime, routeApi } from "./api.js";
 import { PolicyStore } from "../policy/store.js";
 
 function deps(over: Partial<ApiDeps> = {}): ApiDeps {
   return {
     store: new PolicyStore(":memory:"),
     searchDrive: vi.fn(async () => [{ id: "f1", name: "Folder", mimeType: "x", kind: "folder" as const }]),
+    fileStatuses: vi.fn(async () => ({})),
     authInfo: vi.fn(async () => ({ signedIn: true, email: "me@example.com", name: "Me Example" })),
     ...over,
   };
@@ -49,6 +50,25 @@ describe("routeApi", () => {
     expect(deleted).toMatchObject({ status: 200, body: { ok: true } });
   });
 
+  it("annotates each listed grant with its live Drive status", async () => {
+    const fileStatuses = vi.fn(async (ids: string[]) =>
+      Object.fromEntries(ids.map((id) => [id, "trashed" as const])),
+    );
+    const d = deps({ fileStatuses });
+    await routeApi("POST", "/api/grants", q(), grantBody, d);
+
+    const listed = (await routeApi("GET", "/api/grants", q(), undefined, d))!;
+    expect(fileStatuses).toHaveBeenCalledWith(["g1"]);
+    expect((listed.body as { grants: { status: string }[] }).grants[0]?.status).toBe("trashed");
+  });
+
+  it("falls back to 'unknown' status when the checker omits an id", async () => {
+    const d = deps({ fileStatuses: vi.fn(async () => ({})) });
+    await routeApi("POST", "/api/grants", q(), grantBody, d);
+    const listed = (await routeApi("GET", "/api/grants", q(), undefined, d))!;
+    expect((listed.body as { grants: { status: string }[] }).grants[0]?.status).toBe("unknown");
+  });
+
   it("400s on an invalid grant body", async () => {
     const res = await routeApi("POST", "/api/grants", q(), { googleId: "" }, deps());
     expect(res?.status).toBe(400);
@@ -76,5 +96,55 @@ describe("routeApi", () => {
 
   it("404s on an unknown /api route", async () => {
     expect((await routeApi("GET", "/api/nope", q(), undefined, deps()))?.status).toBe(404);
+  });
+});
+
+describe("cachedFileStatuses", () => {
+  const ttl = 1000;
+
+  it("serves repeat calls from cache within the TTL", async () => {
+    const resolve = vi.fn(async (ids: string[]) => Object.fromEntries(ids.map((id) => [id, "active" as const])));
+    let t = 0;
+    const cached = cachedFileStatuses(resolve, ttl, () => t);
+
+    expect(await cached(["a", "b"])).toEqual({ a: "active", b: "active" });
+    t = 500;
+    expect(await cached(["a", "b"])).toEqual({ a: "active", b: "active" });
+    expect(resolve).toHaveBeenCalledTimes(1); // second poll hit the cache
+  });
+
+  it("re-fetches once the TTL has elapsed", async () => {
+    const resolve = vi.fn(async (ids: string[]) => Object.fromEntries(ids.map((id) => [id, "active" as const])));
+    let t = 0;
+    const cached = cachedFileStatuses(resolve, ttl, () => t);
+
+    await cached(["a"]);
+    t = ttl; // exactly at the boundary → stale
+    await cached(["a"]);
+    expect(resolve).toHaveBeenCalledTimes(2);
+  });
+
+  it("only forwards stale/new ids to the resolver", async () => {
+    const resolve = vi.fn(async (ids: string[]) => Object.fromEntries(ids.map((id) => [id, "active" as const])));
+    let t = 0;
+    const cached = cachedFileStatuses(resolve, ttl, () => t);
+
+    await cached(["a"]);
+    t = 100;
+    await cached(["a", "b"]); // "a" still fresh, only "b" is fetched
+    expect(resolve).toHaveBeenNthCalledWith(2, ["b"]);
+  });
+
+  it("prunes ids no longer requested so the cache stays bounded", async () => {
+    const resolve = vi.fn(async (ids: string[]) => Object.fromEntries(ids.map((id) => [id, "active" as const])));
+    let t = 0;
+    const cached = cachedFileStatuses(resolve, ttl, () => t);
+
+    await cached(["a", "b"]);
+    t = 100;
+    await cached(["a"]); // "b" dropped from the grant set → evicted
+    t = 200;
+    await cached(["b"]); // must be re-fetched, proving it was evicted (not served stale)
+    expect(resolve).toHaveBeenLastCalledWith(["b"]);
   });
 });

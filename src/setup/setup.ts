@@ -6,7 +6,7 @@ import { getAuthStatus } from "../google/auth.js";
 import { EMBEDDED_OAUTH_CLIENT } from "../google/generated/oauth-client.js";
 import { DANGEROUS_TOOL_NAMES, READ_ONLY_TOOL_NAMES } from "../services/registry.js";
 
-const SERVER_KEY = "kozocom-google";
+const SERVER_KEY = "terra-mcp-google";
 
 type ClientName = "codex" | "claude" | "copilot" | "kiro" | "all";
 
@@ -129,7 +129,10 @@ function kiroSnippet(command: string, args: string[], credentialsPath: string | 
 export function mcpConfigSnippet({
   client,
   command = "npx",
-  args = ["-y", "-p", PACKAGE_NAME, "terra-mcp"],
+  // Use `--package=` (not `-p`): `claude mcp add -- npx -p ...` lets Claude's CLI
+  // steal `-p` as its own --print flag, dropping into chat mode instead of adding
+  // the server. The long form passes through to npx untouched on every client.
+  args = ["-y", `--package=${PACKAGE_NAME}`, "terra-mcp"],
   credentialsPath = null,
   safeMode = false,
 }: McpSnippetOptions): string {

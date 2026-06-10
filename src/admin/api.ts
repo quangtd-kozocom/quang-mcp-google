@@ -12,11 +12,21 @@ export interface DriveItem {
   kind: ResourceKind;
 }
 
+/**
+ * Live status of a granted resource in Drive, resolved lazily when grants are
+ * listed: `active` (present), `trashed` (in the trash, recoverable), `missing`
+ * (permanently gone / no longer accessible), or `unknown` (couldn't check —
+ * e.g. signed out or a transient error, so the UI shouldn't flag it as stale).
+ */
+export type GrantStatus = "active" | "trashed" | "missing" | "unknown";
+
 /** Collaborators the API routes need, injected so the router stays testable. */
 export interface ApiDeps {
   store: PolicyStore;
   searchDrive: (query: string) => Promise<DriveItem[]>;
   authInfo: () => Promise<{ signedIn: boolean; email: string | null; name: string | null }>;
+  /** Resolve each granted id's live Drive status; must never throw (map to `unknown`). */
+  fileStatuses: (ids: string[]) => Promise<Record<string, GrantStatus>>;
 }
 
 /** A plain HTTP-ish response the transport layer serializes. */
@@ -74,6 +84,58 @@ export function driveSearcher(drive: drive_v3.Drive): (query: string) => Promise
   };
 }
 
+/** Build the `fileStatuses` dependency backed by a live Drive client. */
+export function driveFileStatuses(
+  drive: drive_v3.Drive,
+): (ids: string[]) => Promise<Record<string, GrantStatus>> {
+  const adapter = new DriveFileAdapter(drive);
+  return async (ids: string[]) => {
+    const entries = await Promise.all(
+      ids.map(async (id): Promise<readonly [string, GrantStatus]> => {
+        try {
+          const { trashed } = await adapter.getFileTrashed(id);
+          return [id, trashed ? "trashed" : "active"];
+        } catch (error) {
+          // A 404 means the file is permanently gone; anything else (403, network,
+          // rate limit) is inconclusive, so leave it `unknown` rather than crying wolf.
+          const code = (error as { code?: number; status?: number }).code ?? (error as { status?: number }).status;
+          return [id, code === 404 ? "missing" : "unknown"];
+        }
+      }),
+    );
+    return Object.fromEntries(entries);
+  };
+}
+
+/**
+ * Wrap a status resolver with a per-id TTL cache so the admin console's frequent
+ * grants poll doesn't hit Drive on every tick. Within `ttlMs` an id is served
+ * from memory; only stale or never-seen ids are forwarded to `resolve`. Ids no
+ * longer present in a call are pruned, so the cache stays bounded to the current
+ * grant set. `now` is injectable for deterministic tests.
+ */
+export function cachedFileStatuses(
+  resolve: (ids: string[]) => Promise<Record<string, GrantStatus>>,
+  ttlMs: number,
+  now: () => number = Date.now,
+): (ids: string[]) => Promise<Record<string, GrantStatus>> {
+  const cache = new Map<string, { status: GrantStatus; at: number }>();
+  return async (ids: string[]) => {
+    const at = now();
+    const stale = ids.filter((id) => {
+      const hit = cache.get(id);
+      return !hit || at - hit.at >= ttlMs;
+    });
+    if (stale.length > 0) {
+      const fresh = await resolve(stale);
+      for (const id of stale) cache.set(id, { status: fresh[id] ?? "unknown", at });
+    }
+    const wanted = new Set(ids);
+    for (const id of cache.keys()) if (!wanted.has(id)) cache.delete(id);
+    return Object.fromEntries(ids.map((id) => [id, cache.get(id)?.status ?? "unknown"]));
+  };
+}
+
 /**
  * The admin console's HTTP surface, as a pure function over (method, path, body)
  * — no `node:http` objects — so it unit-tests against an in-memory store and
@@ -96,7 +158,11 @@ export async function routeApi(
     }
 
     if (path === "/api/grants") {
-      if (method === "GET") return ok({ grants: deps.store.listGrants() });
+      if (method === "GET") {
+        const grants = deps.store.listGrants();
+        const statuses = await deps.fileStatuses(grants.map((g) => g.googleId));
+        return ok({ grants: grants.map((g) => ({ ...g, status: statuses[g.googleId] ?? "unknown" })) });
+      }
       if (method === "POST") {
         const input = createGrantSchema.parse(body);
         return ok({ grant: deps.store.upsertGrant(input) }, 201);
