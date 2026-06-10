@@ -24,6 +24,7 @@ export interface Health {
   mode: Mode;
   signedIn: boolean;
   email: string | null;
+  name: string | null;
 }
 
 export interface NewGrant {

@@ -16,7 +16,7 @@ export interface DriveItem {
 export interface ApiDeps {
   store: PolicyStore;
   searchDrive: (query: string) => Promise<DriveItem[]>;
-  authInfo: () => Promise<{ signedIn: boolean; email: string | null }>;
+  authInfo: () => Promise<{ signedIn: boolean; email: string | null; name: string | null }>;
 }
 
 /** A plain HTTP-ish response the transport layer serializes. */

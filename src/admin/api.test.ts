@@ -6,7 +6,7 @@ function deps(over: Partial<ApiDeps> = {}): ApiDeps {
   return {
     store: new PolicyStore(":memory:"),
     searchDrive: vi.fn(async () => [{ id: "f1", name: "Folder", mimeType: "x", kind: "folder" as const }]),
-    authInfo: vi.fn(async () => ({ signedIn: true, email: "me@example.com" })),
+    authInfo: vi.fn(async () => ({ signedIn: true, email: "me@example.com", name: "Me Example" })),
     ...over,
   };
 }
@@ -30,7 +30,7 @@ describe("routeApi", () => {
 
   it("reports health with mode and auth info", async () => {
     const res = await routeApi("GET", "/api/health", q(), undefined, deps());
-    expect(res).toMatchObject({ status: 200, body: { ok: true, mode: "read_open", signedIn: true, email: "me@example.com" } });
+    expect(res).toMatchObject({ status: 200, body: { ok: true, mode: "read_open", signedIn: true, email: "me@example.com", name: "Me Example" } });
   });
 
   it("lists, creates, patches and deletes grants", async () => {

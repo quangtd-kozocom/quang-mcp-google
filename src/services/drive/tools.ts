@@ -151,10 +151,6 @@ Returns: { file: {id,name,mimeType,size,modifiedTime,parents,owners,webViewLink,
 const downloadFileInput = {
   file_id: z.string().min(1),
   export_mime_type: z.string().optional(),
-  save_path: z
-    .string()
-    .optional()
-    .describe("Path under TERRA_MCP_LOCAL_FILE_ROOT to write the downloaded bytes"),
 };
 
 export async function driveDownloadFile(
@@ -164,18 +160,11 @@ export async function driveDownloadFile(
   const download = await new DriveFileAdapter(drive).downloadFile({
     fileId: args.file_id,
     exportMimeType: args.export_mime_type,
-    savePath: args.save_path,
   });
-  if (download.savedTo) {
-    return toolResult(
-      `Downloaded "${download.name}" (${download.bytes} bytes, ${download.mimeType}) to ${download.savedTo}`,
-      { file_id: args.file_id, saved_to: download.savedTo, bytes: download.bytes, mime_type: download.mimeType },
-    );
-  }
-  if (download.binaryRequiresSavePath) {
+  if (download.binaryUnsupported) {
     return errorResult(
-      `Error: "${download.name}" is binary (${download.mimeType}). Provide save_path to write it to disk, ` +
-        `or set export_mime_type to a text format (e.g. text/csv, text/plain) for Google files.`,
+      `Error: "${download.name}" is binary (${download.mimeType}) and can't be returned inline. ` +
+        `Set export_mime_type to a text format (e.g. text/csv, text/plain) for Google-native files.`,
     );
   }
   return toolResult(download.content ?? "", {
@@ -193,13 +182,10 @@ const downloadFileTool = driveTool({
 
 Args:
   - file_id (string)
-  - export_mime_type (string, optional): for Google-native files, e.g. 'text/csv', 'text/plain',
-    'application/pdf', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'.
+  - export_mime_type (string, optional): for Google-native files, e.g. 'text/csv', 'text/plain'.
     Defaults: Sheets→text/csv, Docs→text/plain, Slides→application/pdf.
-  - save_path (string, optional): write bytes under TERRA_MCP_LOCAL_FILE_ROOT. Required for
-    binary content; if omitted, only text content is returned inline.
 
-Returns (text content inline) or { file_id, saved_to, bytes, mime_type } when saved to disk.`,
+Returns text content inline. Binary content can't be returned — export Google-native files to a text format.`,
   inputSchema: downloadFileInput,
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
   policy: { action: "read", kind: "file", idArg: "file_id" },
@@ -246,8 +232,7 @@ Returns: { file: {id, name, ...} }`,
 
 const uploadFileInput = {
   name: z.string().min(1),
-  content: z.string().optional(),
-  local_path: z.string().optional(),
+  content: z.string().describe("Inline text content of the new file"),
   mime_type: z.string().optional(),
   parent_id: z.string().optional(),
 };
@@ -256,13 +241,9 @@ export async function driveUploadFile(
   drive: drive_v3.Drive,
   args: ArgsOf<typeof uploadFileInput>,
 ): Promise<ToolResult> {
-  if (!args.content && !args.local_path) {
-    return errorResult("Error: provide either 'content' (inline text) or 'local_path' to upload.");
-  }
   const file = await new DriveFileAdapter(drive).uploadFile({
     name: args.name,
     content: args.content,
-    localPath: args.local_path,
     mimeType: args.mime_type,
     parentId: args.parent_id,
   });
@@ -272,16 +253,15 @@ export async function driveUploadFile(
 const uploadFileTool = driveTool({
   name: "drive_upload_file",
   title: "Upload file to Drive",
-  description: `Create a new Drive file from inline text or a local file path.
+  description: `Create a new Drive file from inline text content.
 
 Args:
   - name (string): file name to create
-  - content (string, optional): inline text content
-  - local_path (string, optional): path under TERRA_MCP_LOCAL_FILE_ROOT to upload (takes precedence)
-  - mime_type (string, optional): e.g. 'text/plain', 'text/csv', 'application/pdf' (default octet-stream)
+  - content (string): inline text content
+  - mime_type (string, optional): e.g. 'text/plain', 'text/csv' (default octet-stream)
   - parent_id (string, optional): destination folder ID
 
-Provide exactly one of content/local_path. Returns: { file: {id, name, ...} }`,
+Returns: { file: {id, name, ...} }`,
   inputSchema: uploadFileInput,
   annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
   policy: {

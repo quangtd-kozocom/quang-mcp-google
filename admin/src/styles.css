@@ -20,6 +20,27 @@
   --mono: "IBM Plex Mono", ui-monospace, monospace;
   --body: "Archivo", system-ui, sans-serif;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --topbar-bg: rgba(12, 13, 15, 0.92);
+}
+
+/* Light theme — same token contract, brighter surfaces and darker ink. */
+:root[data-mode="light"] {
+  --base: #f4f5f3;
+  --panel: #ffffff;
+  --panel-2: #eef0ec;
+  --panel-3: #e1e4df;
+  --line: rgba(0, 0, 0, 0.14);
+  --line-soft: rgba(0, 0, 0, 0.07);
+  --text: #15171a;
+  --muted: #545856;
+  --faint: #888d8a;
+  --amber: #b9740a;
+  --amber-soft: rgba(185, 116, 10, 0.13);
+  --red: #cf3a3a;
+  --red-soft: rgba(207, 58, 58, 0.12);
+  --green: #2c9b59;
+  --blue: #3a6cce;
+  --topbar-bg: rgba(255, 255, 255, 0.9);
 }
 
 * {
@@ -76,7 +97,7 @@ code {
   min-height: 50px;
   padding: 8px 14px;
   border-bottom: 1px solid var(--line);
-  background: rgba(12, 13, 15, 0.92);
+  background: var(--topbar-bg);
   backdrop-filter: blur(14px);
 }
 
@@ -308,6 +329,15 @@ code {
   font-size: 10px;
 }
 
+.menu-row[data-active="true"] {
+  border-color: var(--line);
+  background: var(--panel-2);
+}
+
+.menu-row[data-active="true"] span {
+  color: var(--amber);
+}
+
 .notice {
   display: flex;
   align-items: center;
@@ -317,6 +347,10 @@ code {
   background: rgba(245, 166, 35, 0.09);
   color: #f8dba7;
   font-size: 12px;
+}
+
+:root[data-mode="light"] .notice {
+  color: #7a4a06;
 }
 
 .notice code {
@@ -383,6 +417,10 @@ code {
 
 .filter-search input::placeholder {
   color: var(--faint);
+}
+
+.filter-search:focus-within {
+  border-color: var(--amber);
 }
 
 .chip-row {
@@ -689,6 +727,25 @@ code {
   outline: 0;
 }
 
+/* The shadcn <Input> ships a focus ring keyed to a `--ring` token this theme
+   doesn't define, which renders as a stark white halo. Replace it with the
+   app's own amber focus treatment on these drawer fields. */
+.search-box input:focus-visible,
+.field input:focus-visible,
+.kind-select:focus-visible {
+  box-shadow: none;
+  outline: none;
+}
+
+.search-box:focus-within {
+  border-color: var(--amber);
+}
+
+.field input:focus-visible,
+.kind-select:focus-visible {
+  border-color: var(--amber);
+}
+
 .results {
   display: grid;
   gap: 6px;
@@ -822,6 +879,26 @@ code {
 
 .detail-grid > span {
   color: var(--faint);
+}
+
+.resource-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.resource-link:hover {
+  text-decoration: underline;
+}
+
+.resource-link svg {
+  flex: none;
 }
 
 .gid {

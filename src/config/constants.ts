@@ -34,14 +34,8 @@ export const ENV = {
   OAUTH_CREDENTIALS: "GOOGLE_OAUTH_CREDENTIALS",
   /** Path to the cached OAuth token (access + refresh). */
   OAUTH_TOKEN: "GOOGLE_OAUTH_TOKEN",
-  /** OAuth token-exchange proxy endpoint. */
-  TOKEN_PROXY_URL: "TERRA_MCP_TOKEN_PROXY_URL",
-  /** Shared deterrent key sent to the proxy in `x-proxy-key`. */
-  PROXY_KEY: "TERRA_MCP_PROXY_KEY",
   /** "1" → run in safe mode: register only read-only tools. */
   SAFE_MODE: "TERRA_MCP_SAFE_MODE",
-  /** The only directory `local_path`/`save_path` may read/write. */
-  LOCAL_FILE_ROOT: "TERRA_MCP_LOCAL_FILE_ROOT",
   /** Path to the SQLite policy/allowlist database. */
   POLICY_DB: "TERRA_MCP_POLICY_DB",
   /** Initial policy mode used when the database has none stored yet. */
@@ -70,9 +64,6 @@ export const TOKEN_PATH = process.env[ENV.OAUTH_TOKEN] ?? join(CONFIG_DIR, "toke
 export const hasExplicitCredentialsPath = (): boolean =>
   process.env[ENV.OAUTH_CREDENTIALS] !== undefined;
 
-/** The configured local-file sandbox root, or undefined when disabled. Lazy. */
-export const getLocalFileRoot = (): string | undefined => process.env[ENV.LOCAL_FILE_ROOT];
-
 /**
  * OAuth token-exchange proxy. Google "Desktop" clients are confidential — the
  * token endpoint requires `client_secret` even with PKCE. To keep the secret out
@@ -81,7 +72,6 @@ export const getLocalFileRoot = (): string | undefined => process.env[ENV.LOCAL_
  * secret and completes the exchange. See the `quang-mcp-auth-proxy` repo.
  */
 export const TOKEN_PROXY_URL =
-  process.env[ENV.TOKEN_PROXY_URL] ??
   "https://quang-mcp-auth-proxy.getting-started-worker.workers.dev/token";
 
 /**
@@ -90,7 +80,6 @@ export const TOKEN_PROXY_URL =
  * protection is PKCE (binds each auth code to the CLI that started the flow).
  */
 export const PROXY_SHARED_KEY =
-  process.env[ENV.PROXY_KEY] ??
   "f80350f60e2c7950b72f3041c673d1194d45efa38217237ecc7bf87530f093d5";
 
 /** Maximum characters returned in a single tool response before truncation. */

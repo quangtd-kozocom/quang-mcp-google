@@ -1,3 +1,12 @@
+import type { Kind } from "./types";
+
+/** Build the canonical Google web URL for a granted resource. */
+export function driveUrl(kind: Kind, id: string): string {
+  if (kind === "folder") return `https://drive.google.com/drive/folders/${id}`;
+  if (kind === "spreadsheet") return `https://docs.google.com/spreadsheets/d/${id}/edit`;
+  return `https://drive.google.com/file/d/${id}/view`;
+}
+
 /** Middle-truncate a long Google ID so head and tail stay visible. */
 export function middleTruncate(value: string, head = 8, tail = 6): string {
   if (value.length <= head + tail + 1) return value;

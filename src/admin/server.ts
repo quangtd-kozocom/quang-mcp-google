@@ -1,4 +1,5 @@
-import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { serve, type ServerType } from "@hono/node-server";
+import { Hono } from "hono";
 import { readFile, stat } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, extname, join, normalize, resolve } from "node:path";
@@ -29,8 +30,8 @@ function buildDeps(): ApiDeps {
     store: getPolicyStoreOrThrow(),
     searchDrive: async (query) => driveSearcher((await getGoogleClients()).drive)(query),
     authInfo: async () => {
-      const status = await getAuthStatus().catch(() => ({ authenticated: false, email: null }));
-      return { signedIn: status.authenticated, email: status.email ?? null };
+      const status = await getAuthStatus().catch(() => ({ authenticated: false, email: null, name: null }));
+      return { signedIn: status.authenticated, email: status.email ?? null, name: status.name ?? null };
     },
   };
 }
@@ -55,25 +56,13 @@ async function isDir(path: string): Promise<boolean> {
   }
 }
 
-async function readBody(req: IncomingMessage): Promise<unknown> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of req) chunks.push(chunk as Buffer);
-  if (chunks.length === 0) return undefined;
-  const raw = Buffer.concat(chunks).toString("utf8");
-  return raw ? JSON.parse(raw) : undefined;
-}
-
-function sendJson(res: ServerResponse, status: number, body: unknown): void {
-  const payload = JSON.stringify(body);
-  res.writeHead(status, { "content-type": "application/json; charset=utf-8" });
-  res.end(payload);
-}
-
-async function serveStatic(res: ServerResponse, staticDir: string | undefined, urlPath: string): Promise<void> {
+/** Serve a file from the built SPA, falling back to index.html for client-side routing. */
+async function serveStatic(staticDir: string | undefined, urlPath: string): Promise<Response> {
   if (!staticDir) {
-    res.writeHead(503, { "content-type": "text/plain; charset=utf-8" });
-    res.end("Admin UI is not built. Run `pnpm admin:build` (or set TERRA_MCP_ADMIN_STATIC_DIR).");
-    return;
+    return new Response(
+      "Admin UI is not built. Run `pnpm admin:build` (or set TERRA_MCP_ADMIN_STATIC_DIR).",
+      { status: 503, headers: { "content-type": "text/plain; charset=utf-8" } },
+    );
   }
   // Resolve the request to a file inside staticDir; fall back to index.html so
   // the single-page app can handle its own routing. Reject path traversal.
@@ -84,11 +73,12 @@ async function serveStatic(res: ServerResponse, staticDir: string | undefined, u
 
   try {
     const data = await readFile(filePath);
-    res.writeHead(200, { "content-type": MIME[extname(filePath)] ?? "application/octet-stream" });
-    res.end(data);
+    return new Response(data, {
+      status: 200,
+      headers: { "content-type": MIME[extname(filePath)] ?? "application/octet-stream" },
+    });
   } catch {
-    res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
-    res.end("Not found");
+    return new Response("Not found", { status: 404, headers: { "content-type": "text/plain; charset=utf-8" } });
   }
 }
 
@@ -106,10 +96,47 @@ export interface AdminServerHandle {
   close: () => Promise<void>;
 }
 
+/** Build the Hono app: the policy REST API under `/api` + the built SPA for the rest. */
+function buildApp(deps: ApiDeps, staticDir: string | undefined): Hono {
+  const app = new Hono();
+
+  app.all("/api", (c) => handleApi(c, deps));
+  app.all("/api/*", (c) => handleApi(c, deps));
+  app.all("*", async (c) => serveStatic(staticDir, new URL(c.req.url).pathname));
+
+  return app;
+}
+
+/** Map a Hono request onto the pure `routeApi` router and serialize its result. */
+async function handleApi(
+  c: { req: { method: string; url: string; json: () => Promise<unknown> } },
+  deps: ApiDeps,
+): Promise<Response> {
+  const url = new URL(c.req.url);
+  const method = c.req.method;
+  try {
+    const body =
+      method === "GET" || method === "DELETE" ? undefined : await c.req.json().catch(() => undefined);
+    const result = await routeApi(method, url.pathname, url.searchParams, body, deps);
+    if (result) {
+      return new Response(JSON.stringify(result.body), {
+        status: result.status,
+        headers: { "content-type": "application/json; charset=utf-8" },
+      });
+    }
+    return await serveStatic(undefined, url.pathname);
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), {
+      status: 400,
+      headers: { "content-type": "application/json; charset=utf-8" },
+    });
+  }
+}
+
 /**
- * Start the admin web console: a tiny `node:http` server that exposes the policy
- * REST API under `/api` and serves the built SPA for everything else. No
- * framework, no extra runtime dependency.
+ * Start the admin web console: a small Hono server that exposes the policy REST
+ * API under `/api` and serves the built SPA for everything else, running on the
+ * Node adapter (`@hono/node-server`).
  */
 export async function startAdminServer(
   opts: { port?: number; staticDir?: string } = {},
@@ -117,38 +144,22 @@ export async function startAdminServer(
   const port = opts.port ?? ADMIN_PORT;
   const deps = buildDeps();
   const staticDir = await resolveStaticDir(opts.staticDir);
+  const app = buildApp(deps, staticDir);
 
   return new Promise((resolvePromise, rejectPromise) => {
-    const server = createServer((req, res) => {
-      void handle(req, res, deps, staticDir);
-    });
-    server.on("error", rejectPromise);
-    server.listen(port, () => {
-      resolvePromise({
-        port,
-        url: `http://localhost:${port}`,
-        close: () => new Promise<void>((done) => server.close(() => done())),
+    let server: ServerType;
+    try {
+      server = serve({ fetch: app.fetch, port }, (info) => {
+        resolvePromise({
+          port: info.port,
+          url: `http://localhost:${info.port}`,
+          close: () => new Promise<void>((done) => server.close(() => done())),
+        });
       });
-    });
-  });
-}
-
-async function handle(
-  req: IncomingMessage,
-  res: ServerResponse,
-  deps: ApiDeps,
-  staticDir: string | undefined,
-): Promise<void> {
-  const url = new URL(req.url ?? "/", "http://localhost");
-  const method = req.method ?? "GET";
-  try {
-    if (url.pathname === "/api" || url.pathname.startsWith("/api/")) {
-      const body = method === "GET" || method === "DELETE" ? undefined : await readBody(req);
-      const result = await routeApi(method, url.pathname, url.searchParams, body, deps);
-      if (result) return sendJson(res, result.status, result.body);
+    } catch (error) {
+      rejectPromise(error);
+      return;
     }
-    await serveStatic(res, staticDir, url.pathname);
-  } catch (error) {
-    sendJson(res, 400, { error: error instanceof Error ? error.message : String(error) });
-  }
+    server.on("error", rejectPromise);
+  });
 }

@@ -76,7 +76,7 @@ const demo = (() => {
 
   return {
     health(): Health {
-      return { ok: true, mode, signedIn: true, email: "demo@kozo-japan.com" };
+      return { ok: true, mode, signedIn: true, email: "demo@kozo-japan.com", name: "Demo User" };
     },
     grants(): Grant[] {
       return grants.slice();

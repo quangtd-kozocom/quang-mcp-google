@@ -52,9 +52,11 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "@hono/node-server": "^2.0.4",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "commander": "^15.0.0",
     "googleapis": "^144.0.0",
+    "hono": "^4.12.24",
     "open": "^10.1.0",
     "zod": "^4.4.3"
   },

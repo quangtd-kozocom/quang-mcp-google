@@ -6,9 +6,9 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { MoreVertical, Search, X } from "lucide-react";
+import { ExternalLink, MoreVertical, Search, X } from "lucide-react";
 import type { Grant, Kind } from "../lib/types";
-import { formatDate } from "../lib/format";
+import { driveUrl, formatDate } from "../lib/format";
 import { CopyId } from "./CopyId";
 import { GrantPermissions } from "./GrantPermissions";
 import { KindIcon } from "./icons";
@@ -300,6 +300,10 @@ export function GrantsTable({
           ref={detailDialogRef}
           className="drawer-dialog"
           onClose={() => dispatch({ type: "select", selectedId: null })}
+          onClick={(e) => {
+            // Click on the dimmed area beside the drawer closes the detail panel.
+            if (e.target === detailDialogRef.current) dispatch({ type: "select", selectedId: null });
+          }}
         >
           <div className="drawer detail-drawer" aria-labelledby="grant-detail-head">
             <div className="drawer-head">
@@ -331,6 +335,16 @@ export function GrantsTable({
                   </Badge>
                   <span>Google ID</span>
                   <CopyId value={selected.googleId} />
+                  <span>Link</span>
+                  <a
+                    className="resource-link"
+                    href={driveUrl(selected.kind, selected.googleId)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Open in Google
+                    <ExternalLink size={13} aria-hidden="true" />
+                  </a>
                   <span>Added</span>
                   <code>{formatDate(selected.createdAt)}</code>
                 </div>

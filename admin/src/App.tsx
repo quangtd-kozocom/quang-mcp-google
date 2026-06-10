@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Settings } from "lucide-react";
 import { api, isUsingFallback } from "./lib/api";
@@ -10,7 +10,17 @@ import { AddGrant } from "./components/AddGrant";
 import { useToast } from "./components/Toasts";
 
 type PermKey = "canRead" | "canWrite" | "canDelete";
+type Theme = "dark" | "light";
+const THEME_KEY = "terra-theme";
 const POLL_MS = 4000;
+
+function readStoredTheme(): Theme {
+  try {
+    return localStorage.getItem(THEME_KEY) === "light" ? "light" : "dark";
+  } catch {
+    return "dark";
+  }
+}
 const queryKeys = {
   health: ["health"] as const,
   grants: ["grants"] as const,
@@ -21,6 +31,16 @@ export function App() {
   const queryClient = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [theme, setTheme] = useState<Theme>(readStoredTheme);
+
+  useEffect(() => {
+    document.documentElement.dataset.mode = theme;
+    try {
+      localStorage.setItem(THEME_KEY, theme);
+    } catch {
+      // storage unavailable (private mode); the in-memory theme still applies
+    }
+  }, [theme]);
 
   const { data: healthData } = useQuery({
     queryKey: queryKeys.health,
@@ -145,13 +165,33 @@ export function App() {
             {settingsOpen && (
               <div className="settings-popover" role="menu">
                 <div className="menu-kicker">Display</div>
-                <button type="button" role="menuitem" className="menu-row" disabled>
-                  Dark precision
-                  <span>active</span>
+                <button
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={theme === "dark"}
+                  className="menu-row"
+                  data-active={theme === "dark"}
+                  onClick={() => {
+                    setTheme("dark");
+                    setSettingsOpen(false);
+                  }}
+                >
+                  Dark
+                  <span>{theme === "dark" ? "active" : ""}</span>
                 </button>
-                <button type="button" role="menuitem" className="menu-row" disabled>
-                  Light mode
-                  <span>later</span>
+                <button
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={theme === "light"}
+                  className="menu-row"
+                  data-active={theme === "light"}
+                  onClick={() => {
+                    setTheme("light");
+                    setSettingsOpen(false);
+                  }}
+                >
+                  Light
+                  <span>{theme === "light" ? "active" : ""}</span>
                 </button>
               </div>
             )}

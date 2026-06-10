@@ -150,6 +150,11 @@ export function AddGrant({
       ref={dialogRef}
       className="drawer-dialog"
       onClose={() => onOpenChange(false)}
+      onClick={(e) => {
+        // The drawer occupies only the right side; a click that lands on the
+        // dialog element itself (the dimmed area to its left) dismisses it.
+        if (e.target === dialogRef.current) onOpenChange(false);
+      }}
     >
       <div className="drawer add-drawer" aria-labelledby="add-head">
         <div className="drawer-head">

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { drive_v3 } from "googleapis";
 
 vi.mock("../../google/client.js", () => ({
@@ -39,10 +39,7 @@ const asDrive = (d: ReturnType<typeof fakeDrive>): drive_v3.Drive => d as unknow
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.stubEnv("TERRA_MCP_LOCAL_FILE_ROOT", "");
 });
-
-afterEach(() => vi.unstubAllEnvs());
 
 describe("driveListFiles", () => {
   it("appends trashed filter, passes pagination, and returns next token", async () => {
@@ -100,22 +97,14 @@ describe("driveDownloadFile", () => {
     expect(res.content[0].text).toBe("a,b,c");
   });
 
-  it("errors on binary content without a save_path", async () => {
+  it("errors on binary content (can't be returned inline)", async () => {
     const drive = fakeDrive();
     drive.files.get
       .mockResolvedValueOnce({ data: { mimeType: "application/pdf", name: "doc.pdf" } })
       .mockResolvedValueOnce({ data: Buffer.from([1, 2, 3]) });
     const res = await driveDownloadFile(asDrive(drive), { file_id: "1" });
     expect(res.isError).toBe(true);
-    expect(res.content[0].text).toContain("save_path");
-  });
-
-  it("rejects save_path when local file root is not configured", async () => {
-    const drive = fakeDrive();
-    await expect(driveDownloadFile(asDrive(drive), { file_id: "1", save_path: "doc.txt" })).rejects.toThrow(
-      "Local file access is disabled",
-    );
-    expect(drive.files.get).not.toHaveBeenCalled();
+    expect(res.content[0].text).toContain("binary");
   });
 });
 
@@ -141,19 +130,14 @@ describe("driveDeleteFile", () => {
 });
 
 describe("driveUploadFile", () => {
-  it("errors when neither content nor local_path is given", async () => {
+  it("uploads inline text content", async () => {
     const drive = fakeDrive();
-    const res = await driveUploadFile(asDrive(drive), { name: "f.txt" });
-    expect(res.isError).toBe(true);
-    expect(drive.files.create).not.toHaveBeenCalled();
-  });
-
-  it("rejects local_path when local file root is not configured", async () => {
-    const drive = fakeDrive();
-    await expect(driveUploadFile(asDrive(drive), { name: "f.txt", local_path: "f.txt" })).rejects.toThrow(
-      "Local file access is disabled",
+    drive.files.create.mockResolvedValue({ data: { id: "1", name: "f.txt" } });
+    const res = await driveUploadFile(asDrive(drive), { name: "f.txt", content: "hello" });
+    expect(drive.files.create).toHaveBeenCalledWith(
+      expect.objectContaining({ requestBody: expect.objectContaining({ name: "f.txt" }) }),
     );
-    expect(drive.files.create).not.toHaveBeenCalled();
+    expect(res.structuredContent).toEqual({ file: { id: "1", name: "f.txt" } });
   });
 });
 

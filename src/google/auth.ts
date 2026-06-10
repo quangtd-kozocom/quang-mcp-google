@@ -26,6 +26,7 @@ interface ClientSecret {
 export interface AuthStatus {
   authenticated: boolean;
   email?: string;
+  name?: string;
   scopes?: string[];
   expiryDate?: number;
 }
@@ -161,15 +162,20 @@ async function proxyTokenExchange(body: Record<string, string>): Promise<Credent
   };
 }
 
-/** Fetch the signed-in user's email, best-effort. */
-async function fetchEmail(client: OAuth2Client): Promise<string | undefined> {
+/** Fetch the signed-in user's profile (email + display name), best-effort. */
+async function fetchUserInfo(client: OAuth2Client): Promise<{ email?: string; name?: string }> {
   try {
     const oauth2 = google.oauth2({ version: "v2", auth: client });
     const { data } = await oauth2.userinfo.get();
-    return data.email ?? undefined;
+    return { email: data.email ?? undefined, name: data.name ?? undefined };
   } catch {
-    return undefined;
+    return {};
   }
+}
+
+/** Fetch the signed-in user's email, best-effort. */
+async function fetchEmail(client: OAuth2Client): Promise<string | undefined> {
+  return (await fetchUserInfo(client)).email;
 }
 
 /**
@@ -211,14 +217,16 @@ export async function getAuthStatus(): Promise<AuthStatus> {
   const token = await loadToken();
   if (!token) return { authenticated: false };
   let email: string | undefined;
+  let name: string | undefined;
   try {
-    email = await fetchEmail(await getAuthenticatedClient());
+    ({ email, name } = await fetchUserInfo(await getAuthenticatedClient()));
   } catch {
     // token present but OAuth client config unreadable; still report as cached
   }
   return {
     authenticated: true,
     email,
+    name,
     scopes: token.scope?.split(" "),
     expiryDate: token.expiry_date ?? undefined,
   };

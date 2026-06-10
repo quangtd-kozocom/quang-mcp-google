@@ -1,8 +1,5 @@
-import { createReadStream } from "node:fs";
-import { writeFile } from "node:fs/promises";
 import { Readable } from "node:stream";
 import type { drive_v3 } from "googleapis";
-import { safeReadPath, safeWritePath } from "../../core/local-file.js";
 
 const DRIVE_FILE_FIELDS =
   "id, name, mimeType, modifiedTime, createdTime, size, parents, trashed, webViewLink, iconLink, owners(displayName, emailAddress)";
@@ -15,8 +12,7 @@ export interface DriveDownloadResult {
   mimeType: string;
   bytes: number;
   content?: string;
-  savedTo?: string;
-  binaryRequiresSavePath: boolean;
+  binaryUnsupported: boolean;
 }
 
 export class DriveFileAdapter {
@@ -57,9 +53,7 @@ export class DriveFileAdapter {
   async downloadFile(args: {
     fileId: string;
     exportMimeType?: string;
-    savePath?: string;
   }): Promise<DriveDownloadResult> {
-    const savePath = args.savePath ? await safeWritePath(args.savePath) : undefined;
     const meta = await this.drive.files.get({
       fileId: args.fileId,
       fields: "id, name, mimeType, size",
@@ -80,24 +74,13 @@ export class DriveFileAdapter {
         );
     const buffer = Buffer.from(res.data as ArrayBuffer);
     const mimeType = native ? (exportMime as string) : (meta.data.mimeType ?? "application/octet-stream");
-    if (savePath) {
-      await writeFile(savePath, buffer);
-      return {
-        fileId: args.fileId,
-        name: meta.data.name,
-        mimeType,
-        bytes: buffer.byteLength,
-        savedTo: savePath,
-        binaryRequiresSavePath: false,
-      };
-    }
     if (!isTextMime(mimeType)) {
       return {
         fileId: args.fileId,
         name: meta.data.name,
         mimeType,
         bytes: buffer.byteLength,
-        binaryRequiresSavePath: true,
+        binaryUnsupported: true,
       };
     }
     return {
@@ -106,7 +89,7 @@ export class DriveFileAdapter {
       mimeType,
       bytes: buffer.byteLength,
       content: buffer.toString("utf8"),
-      binaryRequiresSavePath: false,
+      binaryUnsupported: false,
     };
   }
 
@@ -126,13 +109,10 @@ export class DriveFileAdapter {
   async uploadFile(args: {
     name: string;
     content?: string;
-    localPath?: string;
     mimeType?: string;
     parentId?: string;
   }): Promise<drive_v3.Schema$File> {
-    const body = args.localPath
-      ? createReadStream(await safeReadPath(args.localPath))
-      : Readable.from(args.content ?? "");
+    const body = Readable.from(args.content ?? "");
     const { data } = await this.drive.files.create({
       requestBody: {
         name: args.name,
